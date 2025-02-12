@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "ShuttleCav1",
-    "slug": "ShuttleCav1",
+    "name": "ShuttleCav",
+    "slug": "shuttlecav",
+    "owner": "khaizerdn",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -22,7 +23,7 @@
       "permissions": [
         "NFC"
       ],
-      "package": "com.yourcompany.shuttlecav1"
+      "package": "com.yourcompany.shuttlecav"
     },
     "web": {
       "bundler": "metro",
@@ -49,8 +50,11 @@
         "origin": false
       },
       "eas": {
-        "projectId": "f6aa5cc9-64e1-441b-a118-c48328bf953e"
+        "projectId": "06717f02-8261-40ff-a0e8-0e25d6b17afc"
       }
     }
+  },
+  "cli": {
+    "appVersionSource": "appJson"
   }
 }

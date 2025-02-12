@@ -26,8 +26,8 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="myapp"/>
-        <data android:scheme="com.yourcompany.shuttlecav1"/>
-        <data android:scheme="exp+shuttlecav1"/>
+        <data android:scheme="com.yourcompany.shuttlecav"/>
+        <data android:scheme="exp+shuttlecav"/>
       </intent-filter>
     </activity>
   </application>
