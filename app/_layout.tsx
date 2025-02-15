@@ -21,20 +21,12 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen name="profile" options={{ title: 'Profile', headerShown: true }} />
-        <Stack.Screen
-          name="menu"
-          options={{
-            title: 'Menu',
-            headerShown: true
-          }}
-        />
-        <Stack.Screen
-          name="scan-nfc"
-          options={{
-            title: 'Scan NFC Card',
-            headerShown: true,
-          }}
-        />
+        <Stack.Screen name="menu" options={{ title: 'Menu', headerShown: true }} />
+        <Stack.Screen name="scan-nfc" options={{ title: 'Scan NFC Card', headerShown: true }} />
+        <Stack.Screen name="travel-history" options={{ title: 'Travel History', headerShown: true }} />
+        <Stack.Screen name="activity-logs" options={{ title: 'Activity Logs', headerShown: true }} />
+        <Stack.Screen name="inspect" options={{ title: 'Inspect', headerShown: true }} />
+        <Stack.Screen name="inspection-logs" options={{ title: 'Inspection Logs', headerShown: true }} />
       </Stack>
     </ThemeProvider>
   );

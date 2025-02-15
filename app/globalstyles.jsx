@@ -7,7 +7,9 @@ const globalStyles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     backgroundColor: '#FFF',
+    padding: 20,
   },
+  // Other global styles (inputs, buttons, etc.)
   mainTitle: {
     fontSize: 24,
     marginBottom: 20,
@@ -23,12 +25,7 @@ const globalStyles = StyleSheet.create({
     marginBottom: 15,
     fontSize: 16,
     color: '#333',
-    justifyContent: 'center', // Center content vertically
-  },
-  inputText: {
-    fontSize: 16,
-    color: '#333',
-    textAlign: 'left', // Align text to the left
+    justifyContent: 'center',
   },
   button: {
     width: '100%',
@@ -49,6 +46,46 @@ const globalStyles = StyleSheet.create({
     color: '#3578E5',
     textAlign: 'center',
     marginTop: 10,
+  },
+  // ===== Travel History Shared Styles =====
+  travelHistoryContainer: {
+    flex: 1,
+    width: '100%',
+  },
+  travelHistoryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    width: '100%',
+  },
+  travelHistoryItem: {
+    width: '100%',
+    backgroundColor: '#EAEAEA',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  travelHistoryLeft: {
+    flex: 1,
+  },
+  travelHistoryRight: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  travelHistoryDate: {
+    fontSize: 14,
+    color: '#777',
+  },
+  travelHistoryRoute: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  travelHistoryAmount: {
+    fontSize: 16,
+    color: '#e74c3c',
   },
 });
 
