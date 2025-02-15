@@ -27,6 +27,7 @@ export default function RootLayout() {
         <Stack.Screen name="activity-logs" options={{ title: 'Activity Logs', headerShown: true }} />
         <Stack.Screen name="inspect" options={{ title: 'Inspect', headerShown: true }} />
         <Stack.Screen name="inspection-logs" options={{ title: 'Inspection Logs', headerShown: true }} />
+        <Stack.Screen name="start-inspection" options={{ title: 'Start Inspection', headerShown: true }} />
       </Stack>
     </ThemeProvider>
   );
