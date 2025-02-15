@@ -28,7 +28,6 @@ const TravelHistory = () => {
     { id: '20', date: 'January 16, 2025', route: 'Carmona Estates to Waltermart', amount: '- 15.00' },
   ];
 
-  // Filter travel history based on search text
   const filteredHistory = travelHistory.filter((item) => {
     const lowerSearch = searchText.toLowerCase();
     return (
@@ -41,29 +40,27 @@ const TravelHistory = () => {
   return (
     <View style={globalStyles.container}>
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search"
-          placeholderTextColor="#999"
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-      </View>
+      <TextInput
+        style={globalStyles.input}
+        placeholder="Search"
+        placeholderTextColor="#999"
+        value={searchText}
+        onChangeText={setSearchText}
+      />
 
       {/* Travel History List */}
-      <View style={styles.historyContainer}>
+      <View style={globalStyles.listContainer}>
         <FlatList
           data={filteredHistory}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.historyItem}>
-              <View style={styles.leftColumn}>
-                <Text style={styles.historyDate}>{item.date}</Text>
-                <Text style={styles.historyRoute}>{item.route}</Text>
+            <View style={globalStyles.listItem}>
+              <View style={globalStyles.listItemLeft}>
+                <Text style={globalStyles.listItemDate}>{item.date}</Text>
+                <Text style={globalStyles.listItemPrimary}>{item.route}</Text>
               </View>
-              <View style={styles.rightColumn}>
-                <Text style={styles.historyAmount}>{item.amount}</Text>
+              <View style={globalStyles.listItemRight}>
+                <Text style={globalStyles.listItemSecondary}>{item.amount}</Text>
               </View>
             </View>
           )}
@@ -73,54 +70,6 @@ const TravelHistory = () => {
       </View>
     </View>
   );
-};
-
-const styles = {
-  searchContainer: {
-    width: '100%',
-    marginBottom: 10,
-  },
-  searchInput: {
-    backgroundColor: '#EAEAEA',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    height: 50,
-    fontSize: 16,
-    color: '#333',
-  },
-  historyContainer: {
-    flex: 1,
-    width: '100%',
-  },
-  historyItem: {
-    width: '100%',
-    backgroundColor: '#EAEAEA',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  leftColumn: {
-    flex: 1,
-  },
-  rightColumn: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  historyDate: {
-    fontSize: 14,
-    color: '#777',
-  },
-  historyRoute: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  historyAmount: {
-    fontSize: 16,
-    color: '#e74c3c',
-  },
 };
 
 export default TravelHistory;

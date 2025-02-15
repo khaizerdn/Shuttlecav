@@ -49,31 +49,31 @@ const Profile = () => {
 
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, backgroundColor: '#FFF' }}>
-      <View style={styles.container}>
-        <View style={globalStyles.input}>
-          <Text style={globalStyles.inputText}>Username: {userInfo.username}</Text>
+      <View style={globalStyles.listContainer}>
+        <View style={globalStyles.listItem}>
+          <Text style={globalStyles.listItemPrimary}>Username: {userInfo.username}</Text>
         </View>
-        <View style={globalStyles.input}>
-          <Text style={globalStyles.inputText}>Last Name: {userInfo.surname}</Text>
+        <View style={globalStyles.listItem}>
+          <Text style={globalStyles.listItemPrimary}>Last Name: {userInfo.surname}</Text>
         </View>
-        <View style={globalStyles.input}>
-          <Text style={globalStyles.inputText}>First Name: {userInfo.firstname}</Text>
+        <View style={globalStyles.listItem}>
+          <Text style={globalStyles.listItemPrimary}>First Name: {userInfo.firstname}</Text>
         </View>
-        <View style={globalStyles.input}>
-          <Text style={globalStyles.inputText}>Middle Initial: {userInfo.middleinitial}</Text>
+        <View style={globalStyles.listItem}>
+          <Text style={globalStyles.listItemPrimary}>Middle Initial: {userInfo.middleinitial}</Text>
         </View>
-        <View style={globalStyles.input}>
-          <Text style={globalStyles.inputText}>Age: {userInfo.age}</Text>
+        <View style={globalStyles.listItem}>
+          <Text style={globalStyles.listItemPrimary}>Age: {userInfo.age}</Text>
         </View>
-        <View style={globalStyles.input}>
-          <Text style={globalStyles.inputText}>Gender: {userInfo.gender}</Text>
+        <View style={globalStyles.listItem}>
+          <Text style={globalStyles.listItemPrimary}>Gender: {userInfo.gender}</Text>
         </View>
-        <View style={globalStyles.input}>
-          <Text style={globalStyles.inputText}>Phone Number: {userInfo.phonenumber}</Text>
+        <View style={globalStyles.listItem}>
+          <Text style={globalStyles.listItemPrimary}>Phone Number: {userInfo.phonenumber}</Text>
         </View>
         {/* NFC Card Section */}
-        <View style={globalStyles.input}>
-          <Text style={globalStyles.inputText}>NFC Card ID: {userInfo.nfcCardId || <TouchableOpacity onPress={handleScanNFC}>
+        <View style={globalStyles.listItem}>
+          <Text style={globalStyles.listItemPrimary}>NFC Card ID: {userInfo.nfcCardId || <TouchableOpacity onPress={handleScanNFC}>
             <Text style={styles.scanText}>Scan NFC Card</Text>
           </TouchableOpacity>} </Text>
         </View>

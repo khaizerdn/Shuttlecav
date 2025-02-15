@@ -34,8 +34,8 @@ const Login = () => {
     <View style={globalStyles.container}>
       <Image source={require('../assets/images/logo.png')} style={{ width: 220, height: 220, marginBottom: 20 }} />
       <Text style={globalStyles.mainTitle}>SHUTTLECAV</Text>
-      <TextInput style={globalStyles.input} placeholder="Username" placeholderTextColor="#A9A9A9" value={username} onChangeText={setUsername} />
-      <TextInput style={globalStyles.input} placeholder="Password" placeholderTextColor="#A9A9A9" secureTextEntry value={password} onChangeText={setPassword} />
+      <TextInput style={globalStyles.listItem} placeholder="Username" placeholderTextColor="#A9A9A9" value={username} onChangeText={setUsername} />
+      <TextInput style={globalStyles.listItem} placeholder="Password" placeholderTextColor="#A9A9A9" secureTextEntry value={password} onChangeText={setPassword} />
       <TouchableOpacity style={globalStyles.button} onPress={handleLogin}>
         <Text style={globalStyles.buttonText}>Log in</Text>
       </TouchableOpacity>

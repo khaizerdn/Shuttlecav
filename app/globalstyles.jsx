@@ -3,10 +3,9 @@ import { StyleSheet } from 'react-native';
 const globalStyles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#FFF',
     padding: 20,
   },
   // Other global styles (inputs, buttons, etc.)
@@ -47,18 +46,14 @@ const globalStyles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
   },
-  // ===== Travel History Shared Styles =====
-  travelHistoryContainer: {
+
+  // ===== Global List Styles =====
+  listContainer: {
     flex: 1,
     width: '100%',
+    minHeight: 200, // ensures the list container never shrinks below this height
   },
-  travelHistoryTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    width: '100%',
-  },
-  travelHistoryItem: {
+  listItem: {
     width: '100%',
     backgroundColor: '#EAEAEA',
     padding: 10,
@@ -67,25 +62,33 @@ const globalStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 60, // each item will have at least this height
   },
-  travelHistoryLeft: {
+  listItemLeft: {
     flex: 1,
   },
-  travelHistoryRight: {
+  listItemRight: {
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  travelHistoryDate: {
+  // Text styles for list items
+  listItemDate: {
     fontSize: 14,
     color: '#777',
   },
-  travelHistoryRoute: {
+  listItemPrimary: {
     fontSize: 16,
     fontWeight: 'bold',
   },
-  travelHistoryAmount: {
+  listItemSecondary: {
     fontSize: 16,
     color: '#e74c3c',
+  },
+  listTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    width: '100%',
   },
 });
 

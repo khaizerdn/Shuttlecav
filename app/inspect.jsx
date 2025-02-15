@@ -26,15 +26,15 @@ const Inspect = () => {
       </View>
 
       {/* Shuttle List */}
-      <View style={styles.historyContainer}>
+      <View style={globalStyles.listContainer}>
         <FlatList
           data={shuttleList}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}
           renderItem={({ item }) => (
-            <View style={styles.historyItem}>
-              <Text style={styles.shuttlePlate}>{item.shuttlePlatNumber}</Text>
+            <View style={globalStyles.listItem}>
+              <Text style={globalStyles.listItemPrimary}>{item.shuttlePlatNumber}</Text>
             </View>
           )}
         />
@@ -58,23 +58,6 @@ const styles = {
   },
   addIcon: {
     fontSize: 34,
-    fontWeight: 'bold',
-  },
-
-  /* Reusing from travel-history: container for the list & each item */
-  historyContainer: {
-    flex: 1,
-    width: '100%',
-  },
-  historyItem: {
-    width: '100%',
-    backgroundColor: '#EAEAEA',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  shuttlePlate: {
-    fontSize: 16,
     fontWeight: 'bold',
   },
 };

@@ -42,18 +42,18 @@ const InspectionLogs = () => {
       </View>
 
       {/* Inspection Logs List */}
-      <View style={styles.historyContainer}>
+      <View style={globalStyles.listContainer}>
         <FlatList
           data={filteredLogs}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.historyItem}>
-              <View style={styles.leftColumn}>
-                <Text style={styles.historyDate}>{item.date}</Text>
-                <Text style={styles.historyRoute}>{item.insPlateNumber}</Text>
+            <View style={globalStyles.listItem}>
+              <View style={globalStyles.listItemLeft}>
+                <Text style={globalStyles.listItemDate}>{item.date}</Text>
+                <Text style={globalStyles.listItemPrimary}>{item.insPlateNumber}</Text>
               </View>
-              <View style={styles.rightColumn}>
-                <Text style={styles.historyAmount}>{item.insTotalAmount}</Text>
+              <View style={globalStyles.listItemRight}>
+                <Text style={globalStyles.listItemSecondary}>{item.insTotalAmount}</Text>
               </View>
             </View>
           )}
@@ -77,41 +77,6 @@ const styles = {
     height: 50,
     fontSize: 16,
     color: '#333',
-  },
-  historyContainer: {
-    flex: 1,
-    width: '100%',
-  },
-  historyItem: {
-    width: '100%',
-    backgroundColor: '#EAEAEA',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  leftColumn: {
-    flex: 1,
-  },
-  rightColumn: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  historyDate: {
-    fontSize: 14,
-    color: '#777',
-  },
-  // This now displays the insPlateNumber.
-  historyRoute: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  // This displays the insTotalAmount.
-  historyAmount: {
-    fontSize: 16,
-    color: '#e74c3c',
   },
 };
 
