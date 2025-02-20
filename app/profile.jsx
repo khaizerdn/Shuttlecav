@@ -12,19 +12,19 @@ const Profile = () => {
   useFocusEffect(
     React.useCallback(() => {
       let isActive = true;
-  
+
       const fetchUserInfo = async () => {
         const token = await AsyncStorage.getItem('userToken');
         if (!token) {
           router.push('/');
           return;
         }
-  
+
         try {
           const response = await fetch(`${config.API_URL}/user`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-  
+
           if (response.ok && isActive) {
             const data = await response.json();
             setUserInfo(data);
@@ -33,7 +33,7 @@ const Profile = () => {
           console.error('Error fetching user info:', error);
         }
       };
-  
+
       fetchUserInfo();
       return () => { isActive = false; };
     }, [])
@@ -48,38 +48,68 @@ const Profile = () => {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, backgroundColor: '#FFF' }}>
+    <ScrollView
+      contentContainerStyle={{ flexGrow: 1, padding: 20, backgroundColor: '#FFF' }}
+    >
       <View style={globalStyles.listContainer}>
         <View style={globalStyles.listItem}>
-          <Text style={globalStyles.listItemPrimary}>Username: {userInfo.username}</Text>
+          <View style={globalStyles.listItemLeft}>
+            <Text style={globalStyles.listItemDate}>Username:</Text>
+            <Text style={globalStyles.listItemPrimary}>{userInfo.username}</Text>
+          </View>
         </View>
         <View style={globalStyles.listItem}>
-          <Text style={globalStyles.listItemPrimary}>Last Name: {userInfo.surname}</Text>
+          <View style={globalStyles.listItemLeft}>
+            <Text style={globalStyles.listItemDate}>Last Name:</Text>
+            <Text style={globalStyles.listItemPrimary}>{userInfo.surname}</Text>
+          </View>
         </View>
         <View style={globalStyles.listItem}>
-          <Text style={globalStyles.listItemPrimary}>First Name: {userInfo.firstname}</Text>
+          <View style={globalStyles.listItemLeft}>
+            <Text style={globalStyles.listItemDate}>First Name:</Text>
+            <Text style={globalStyles.listItemPrimary}>{userInfo.firstname}</Text>
+          </View>
         </View>
         <View style={globalStyles.listItem}>
-          <Text style={globalStyles.listItemPrimary}>Middle Initial: {userInfo.middleinitial}</Text>
+          <View style={globalStyles.listItemLeft}>
+            <Text style={globalStyles.listItemDate}>Middle Initial:</Text>
+            <Text style={globalStyles.listItemPrimary}>{userInfo.middleinitial}</Text>
+          </View>
         </View>
         <View style={globalStyles.listItem}>
-          <Text style={globalStyles.listItemPrimary}>Age: {userInfo.age}</Text>
+          <View style={globalStyles.listItemLeft}>
+            <Text style={globalStyles.listItemDate}>Age:</Text>
+            <Text style={globalStyles.listItemPrimary}>{userInfo.age}</Text>
+          </View>
         </View>
         <View style={globalStyles.listItem}>
-          <Text style={globalStyles.listItemPrimary}>Gender: {userInfo.gender}</Text>
+          <View style={globalStyles.listItemLeft}>
+            <Text style={globalStyles.listItemDate}>Gender:</Text>
+            <Text style={globalStyles.listItemPrimary}>{userInfo.gender}</Text>
+          </View>
         </View>
         <View style={globalStyles.listItem}>
-          <Text style={globalStyles.listItemPrimary}>Phone Number: {userInfo.phonenumber}</Text>
+          <View style={globalStyles.listItemLeft}>
+            <Text style={globalStyles.listItemDate}>Phone Number:</Text>
+            <Text style={globalStyles.listItemPrimary}>{userInfo.phonenumber}</Text>
+          </View>
         </View>
-        {/* NFC Card Section */}
         <View style={globalStyles.listItem}>
-          <Text style={globalStyles.listItemPrimary}>NFC Card ID: {userInfo.nfcCardId || <TouchableOpacity onPress={handleScanNFC}>
-            <Text style={styles.scanText}>Scan NFC Card</Text>
-          </TouchableOpacity>} </Text>
+          <View style={globalStyles.listItemLeft}>
+            <Text style={globalStyles.listItemDate}>NFC Card ID:</Text>
+            {userInfo.nfcCardId ? (
+              <Text style={globalStyles.listItemPrimary}>{userInfo.nfcCardId}</Text>
+            ) : (
+              <TouchableOpacity onPress={handleScanNFC}>
+                <Text style={styles.scanText}>Scan NFC Card</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
     </ScrollView>
   );
+  
 };
 
 const styles = StyleSheet.create({

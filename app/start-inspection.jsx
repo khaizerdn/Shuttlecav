@@ -103,7 +103,7 @@ export default function StartInspection() {
               textAlign: 'center',
             }}
           >
-            Please confirm the information below. If it's correct press the start button below and begin to scan nfc.
+            Please confirm the information below. If it's correct, press the start button below and begin to scan nfc.
           </Text>
         )}
       </View>
