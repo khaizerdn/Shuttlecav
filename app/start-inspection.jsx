@@ -1,23 +1,20 @@
+// StartInspection.jsx
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  FlatList,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import globalStyles from './globalstyles';
 import useNFC from './UseNFC';
+import NfcDisabledModal from './NfcDisabledModal';
 
 export default function StartInspection() {
   const { driver, plate } = useLocalSearchParams();
-  const { scanning, tagData, startScanning, endScanning } = useNFC();
+  const { scanning, tagData, startScanning, endScanning, checkNfcEnabled, enableNFC } = useNFC();
 
   const [scannedLogs, setScannedLogs] = useState([]);
   const [showPassengerModal, setShowPassengerModal] = useState(false);
+  const [showNfcDisabledModal, setShowNfcDisabledModal] = useState(false);
 
+  // Show the passenger modal when a tag is scanned (and only if it isn’t already visible)
   useEffect(() => {
     if (tagData && tagData.id && !showPassengerModal) {
       setShowPassengerModal(true);
@@ -33,6 +30,7 @@ export default function StartInspection() {
     };
     setScannedLogs((prevLogs) => [newLog, ...prevLogs]);
     setShowPassengerModal(false);
+    // Restart scanning after handling the current tag
     if (tagData && tagData.id) {
       startScanning();
     }
@@ -47,6 +45,31 @@ export default function StartInspection() {
     if (tagData && tagData.id) {
       startScanning();
     }
+  };
+
+  // When the Start button is pressed, check if NFC is enabled.
+  // If enabled, begin scanning; otherwise, show the NFC disabled modal.
+  const handleStartInspection = async () => {
+    const isNfcEnabled = await checkNfcEnabled();
+    if (isNfcEnabled) {
+      startScanning();
+    } else {
+      setShowNfcDisabledModal(true);
+    }
+  };
+
+  // Handles enabling NFC from the modal.
+  const handleEnableNFC = async () => {
+    await enableNFC();
+    setShowNfcDisabledModal(false);
+    const isNfcEnabled = await checkNfcEnabled();
+    if (isNfcEnabled) {
+      startScanning();
+    }
+  };
+
+  const handleCancelEnableNFC = () => {
+    setShowNfcDisabledModal(false);
   };
 
   const renderLogItem = ({ item }) => (
@@ -100,7 +123,7 @@ export default function StartInspection() {
           <Text style={globalStyles.buttonText}>End</Text>
         </TouchableOpacity>
       ) : (
-        <TouchableOpacity style={globalStyles.button} onPress={startScanning}>
+        <TouchableOpacity style={globalStyles.button} onPress={handleStartInspection}>
           <Text style={globalStyles.buttonText}>Start</Text>
         </TouchableOpacity>
       )}
@@ -125,10 +148,16 @@ export default function StartInspection() {
             <TouchableOpacity style={globalStyles.cancelButton} onPress={handleCancel}>
               <Text style={globalStyles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-
           </View>
         </View>
       </Modal>
+
+      {/* NFC Disabled Modal */}
+      <NfcDisabledModal 
+        visible={showNfcDisabledModal} 
+        onEnable={handleEnableNFC} 
+        onCancel={handleCancelEnableNFC} 
+      />
     </View>
   );
 }

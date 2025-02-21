@@ -1,3 +1,4 @@
+// Profile.jsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Image, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -5,6 +6,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { config } from './config';
 import globalStyles from './globalstyles';
 import useNFC from './UseNFC';
+import NfcDisabledModal from './NfcDisabledModal';
 
 const Profile = () => {
   const [userInfo, setUserInfo] = useState(null);
@@ -45,16 +47,16 @@ const Profile = () => {
     }, [])
   );
 
-  // Handle NFC scan: send scanned NFC to backend and update UI only if registration is successful.
+  // Handle NFC scan: update backend if tag data is received
   useEffect(() => {
     if (tagData && userInfo) {
-      const nfcCardId = tagData.id; // Get NFC card ID
-      updateNfcCardId(nfcCardId); // Attempt to update backend
-      endScanning(); // End scanning regardless
+      const nfcCardId = tagData.id;
+      updateNfcCardId(nfcCardId);
+      endScanning();
     }
   }, [tagData]);
 
-  // Function to send the NFC Card ID to the backend and update UI only on success.
+  // Function to send the NFC Card ID to the backend and update UI on success.
   const updateNfcCardId = async (nfcCardId) => {
     const token = await AsyncStorage.getItem('userToken');
     try {
@@ -73,7 +75,6 @@ const Profile = () => {
         return;
       }
       
-      // Only update the UI state if the backend update was successful.
       setUserInfo((prev) => ({ ...prev, tag_id: nfcCardId }));
       
     } catch (error) {
@@ -214,28 +215,12 @@ const Profile = () => {
         </View>
       </Modal>
 
-      {/* Modal for NFC Disabled */}
-      <Modal visible={showNfcDisabledModal} animationType="fade" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>Your NFC is disabled. Would you like to enable it?</Text>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[globalStyles.button, { backgroundColor: 'red', width: 100 }]}
-                onPress={handleCancelEnableNFC}
-              >
-                <Text style={globalStyles.buttonText}>No</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[globalStyles.button, { width: 100 }]}
-                onPress={handleEnableNFC}
-              >
-                <Text style={globalStyles.buttonText}>Yes</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* NFC Disabled Modal imported as a separate component */}
+      <NfcDisabledModal 
+        visible={showNfcDisabledModal} 
+        onEnable={handleEnableNFC} 
+        onCancel={handleCancelEnableNFC} 
+      />
     </ScrollView>
   );
 };
@@ -267,30 +252,6 @@ const styles = StyleSheet.create({
   },
   scanningText: {
     textAlign: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    maxWidth: 250,
   },
 });
 
