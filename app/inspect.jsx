@@ -76,8 +76,8 @@ const Inspect = () => {
                     {item.shuttleDriver} - {item.shuttlePlatNumber}
                   </Text>
                 </View>
-                <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
-                  <Text style={styles.deleteButtonText}>Delete</Text>
+                <TouchableOpacity onPress={() => handleDelete(item.id)} style={globalStyles.redListButton}>
+                  <Text style={globalStyles.listButtonText}>Delete</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -107,16 +107,6 @@ const styles = {
   addIcon: {
     fontSize: 34,
     fontWeight: 'bold',
-  },
-  deleteButton: {
-    padding: 10,
-    backgroundColor: '#e74c3c',
-    borderRadius: 5,
-    marginLeft: 10,
-  },
-  deleteButtonText: {
-    color: '#FFF',
-    fontSize: 14,
   },
 };
 

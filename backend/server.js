@@ -4,14 +4,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
-const cors = require('cors');  // Import the CORS package
+const cors = require('cors');
 dotenv.config();
 
 const app = express();
 const port = 5000;
 
 // Middleware
-app.use(cors());  // Enable CORS for all origins (adjust this for production)
+app.use(cors());
 app.use(bodyParser.json());
 
 // MySQL connection
@@ -32,30 +32,29 @@ db.connect((err) => {
 
 // Signup Route
 app.post('/signup', (req, res) => {
-    const { surname, firstname, middleinitial, age, gender, phonenumber, username, password, confirmPassword } = req.body;
-  
-    if (password !== confirmPassword) {
-      return res.status(400).json({ message: "Passwords don't match" });
+  const { surname, firstname, middleinitial, age, gender, phonenumber, username, password, confirmPassword } = req.body;
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: "Passwords don't match" });
+  }
+
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error hashing password' });
     }
-  
-    bcrypt.hash(password, 10, (err, hashedPassword) => {
+
+    const query = `
+      INSERT INTO users (surname, firstname, middleinitial, age, gender, phonenumber, username, password) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    db.query(query, [surname, firstname, middleinitial, age, gender, phonenumber, username, hashedPassword], (err) => {
       if (err) {
-        return res.status(500).json({ message: 'Error hashing password' });
+        return res.status(500).json({ message: 'Error signing up' });
       }
-  
-      const query = `
-        INSERT INTO users (surname, firstname, middleinitial, age, gender, phonenumber, username, password) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-      
-      db.query(query, [surname, firstname, middleinitial, age, gender, phonenumber, username, hashedPassword], (err, result) => {
-        if (err) {
-          return res.status(500).json({ message: 'Error signing up' });
-        }
-        return res.status(200).json({ message: 'User registered successfully' });
-      });
+      return res.status(200).json({ message: 'User registered successfully' });
     });
   });
-  
+});
 
 // Login Route
 app.post('/login', (req, res) => {
@@ -78,7 +77,6 @@ app.post('/login', (req, res) => {
         return res.status(400).json({ message: 'Incorrect password' });
       }
 
-      // Generate JWT token with userId in the payload
       const token = jwt.sign(
         { userId: result[0].id, username: result[0].username },
         process.env.JWT_SECRET,
@@ -90,18 +88,15 @@ app.post('/login', (req, res) => {
   });
 });
 
-// server.js
-app.get('/user', async (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1]; // Extract the token from the header
+// Get User Info Route
+app.get('/user', (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
   if (!token) {
     return res.status(401).json({ message: 'No token provided' });
   }
 
   try {
-    // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Fetch user information from the database
     const query = 'SELECT * FROM users WHERE id = ?';
     db.query(query, [decoded.userId], (err, result) => {
       if (err) {
@@ -113,7 +108,6 @@ app.get('/user', async (req, res) => {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      // Return the user's information
       const user = result[0];
       return res.status(200).json({
         firstname: user.firstname,
@@ -123,6 +117,7 @@ app.get('/user', async (req, res) => {
         gender: user.gender,
         phonenumber: user.phonenumber,
         username: user.username,
+        tag_id: user.tag_id,
       });
     });
   } catch (error) {
@@ -131,8 +126,64 @@ app.get('/user', async (req, res) => {
   }
 });
 
-app.post('/update-nfc', async (req, res) => {
+// Update NFC Card ID Route
+app.post('/link-nfc', (req, res) => {
   const { nfcCardId } = req.body;
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.userId;
+    
+    // First, check if the NFC card ID is already linked to a different user
+    const checkQuery = 'SELECT * FROM users WHERE tag_id = ? AND id <> ?';
+    db.query(checkQuery, [nfcCardId, userId], (err, results) => {
+      if (err) {
+        console.error('Database error on check query:', err);
+        return res.status(500).json({ message: 'Error checking NFC card ID' });
+      }
+      
+      if (results.length > 0) {
+        // Duplicate found for a different user – send duplication notice.
+        return res.status(400).json({ message: 'This NFC card is already linked to another user.' });
+      }
+      
+      // Proceed to update NFC card id for current user.
+      const updateQuery = 'UPDATE users SET tag_id = ? WHERE id = ?';
+      db.query(updateQuery, [nfcCardId, userId], (err, updateResult) => {
+        if (err) {
+          console.error('Database error on update query:', err);
+          // Check error for duplicate key violation.
+          if (
+            err.code === 'ER_DUP_ENTRY' ||
+            (err.sqlMessage && err.sqlMessage.includes('Duplicate entry'))
+          ) {
+            return res.status(400).json({ message: 'This NFC card is already linked to another user.' });
+          }
+          return res.status(500).json({ message: 'Error uasdadapdating NFC card ID' });
+        }
+        
+        if (updateResult.affectedRows === 0) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        
+        return res.status(200).json({ message: 'NFC card ID updated successfully' });
+      });
+    });
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+});
+
+
+
+// New Route: Unlink NFC Card ID
+app.post('/unlink-nfc', (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
@@ -140,17 +191,25 @@ app.post('/update-nfc', async (req, res) => {
   }
 
   try {
-    // Verify the token and get the user ID
-    const decoded = jwt.verify(token, 'your-secret-key');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.userId;
 
-    // Update the user's NFC card ID in the database
-    await User.updateOne({ _id: userId }, { nfcCardId });
+    const query = 'UPDATE users SET tag_id = NULL WHERE id = ?';
+    db.query(query, [userId], (err, result) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ message: 'Error unlinking NFC card ID' });
+      }
 
-    res.status(200).json({ message: 'NFC card ID updated successfully' });
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      return res.status(200).json({ message: 'NFC card ID unlinked successfully' });
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to update NFC card ID' });
+    console.error('Token verification failed:', error);
+    return res.status(401).json({ message: 'Invalid token' });
   }
 });
 

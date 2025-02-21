@@ -39,7 +39,6 @@ const globalStyles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  // New global style for a cancel button with a red background.
   cancelButton: {
     width: '100%',
     height: 50,
@@ -61,7 +60,25 @@ const globalStyles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
   },
-
+  // Updated delete button style with fixed width
+  redListButton: {
+    padding: 10,
+    backgroundColor: '#e74c3c', // Blue color matching globalStyles.button
+    borderRadius: 5,
+    width: 60, // Fixed width to prevent stretching
+    alignItems: 'center', // Center the text horizontally
+  },
+  blueListButton: {
+    padding: 10,
+    backgroundColor: '#3578E5', // Blue color matching globalStyles.button
+    borderRadius: 5,
+    width: 60, // Fixed width to prevent stretching
+    alignItems: 'center', // Center the text horizontally
+  },
+  listButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+  },
   // ===== Global List Styles =====
   listContainer: {
     flex: 1,
@@ -104,7 +121,6 @@ const globalStyles = StyleSheet.create({
     marginBottom: 15,
     width: '100%',
   },
-
   // ===== Global Modal Styles =====
   modalOverlay: {
     flex: 1,
