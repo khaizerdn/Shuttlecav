@@ -8,7 +8,6 @@ const globalStyles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  // Other global styles (inputs, buttons, etc.)
   mainTitle: {
     fontSize: 24,
     marginBottom: 20,
@@ -40,6 +39,22 @@ const globalStyles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  // New global style for a cancel button with a red background.
+  cancelButton: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#e74c3c',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+    marginBottom: 10,
+    marginTop: 20,
+  },
+  cancelButtonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
   linkText: {
     fontSize: 16,
     color: '#3578E5',
@@ -51,7 +66,7 @@ const globalStyles = StyleSheet.create({
   listContainer: {
     flex: 1,
     width: '100%',
-    minHeight: 200, // ensures the list container never shrinks below this height
+    minHeight: 200,
   },
   listItem: {
     width: '100%',
@@ -62,7 +77,7 @@ const globalStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    minHeight: 60, // each item will have at least this height
+    minHeight: 60,
   },
   listItemLeft: {
     flex: 1,
@@ -71,7 +86,6 @@ const globalStyles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  // Text styles for list items
   listItemDate: {
     fontSize: 14,
     color: '#777',
@@ -89,6 +103,26 @@ const globalStyles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 15,
     width: '100%',
+  },
+
+  // ===== Global Modal Styles =====
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
   },
 });
 

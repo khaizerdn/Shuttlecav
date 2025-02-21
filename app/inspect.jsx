@@ -1,54 +1,50 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import globalStyles from './globalstyles';
-import { useRouter } from 'expo-router'; // Make sure to install and configure expo-router
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const Inspect = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
 
-  // Sample shuttle data in state
+  // Initial shuttle data
   const [shuttleList, setShuttleList] = useState([
-    { id: '1', shuttleDriver: 'Juan Masipag', shuttlePlatNumber: 'ABC123' },
-    { id: '2', shuttleDriver: 'Juan Tamad', shuttlePlatNumber: 'ABC123' },
-    { id: '3', shuttleDriver: 'Juan Saktolang', shuttlePlatNumber: 'ABC123' },
+    { id: '1', shuttleDriver: 'Juan Masipag', shuttlePlatNumber: 'ABC123', route: 'Carmona Estates to Waltermart' },
+    { id: '2', shuttleDriver: 'Juan Tamad', shuttlePlatNumber: 'ABC123', route: 'Waltermart to Carmona Estates' },
+    { id: '3', shuttleDriver: 'Juan Saktolang', shuttlePlatNumber: 'ABC123', route: 'Carmona Estates to Waltermart' },
   ]);
 
-  // Modal state and inputs
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newFirstName, setNewFirstName] = useState('');
-  const [newLastName, setNewLastName] = useState('');
-  const [newPlate, setNewPlate] = useState('');
-
-  // Add new shuttle
-  const addShuttle = () => {
-    if (newFirstName.trim() && newLastName.trim() && newPlate.trim()) {
-      const newId = Date.now().toString();
-      const fullName = `${newFirstName.trim()} ${newLastName.trim()}`;
-      const newShuttle = {
-        id: newId,
-        shuttleDriver: fullName,
-        shuttlePlatNumber: newPlate.trim(),
-      };
-      setShuttleList([...shuttleList, newShuttle]);
-      // Reset and close modal
-      setNewFirstName('');
-      setNewLastName('');
-      setNewPlate('');
-      setModalVisible(false);
+  // If a new shuttle is passed via route parameters, add it to the list.
+  useEffect(() => {
+    if (params.newShuttle) {
+      let newShuttleObj = params.newShuttle;
+      // Since we passed the shuttle as a JSON string, parse it.
+      try {
+        newShuttleObj = JSON.parse(newShuttleObj);
+      } catch (error) {
+        console.error("Failed to parse newShuttle param:", error);
+        return;
+      }
+      if (newShuttleObj && newShuttleObj.shuttleDriver) {
+        // Create a unique ID for the new shuttle.
+        newShuttleObj.id = Date.now().toString();
+        setShuttleList((prevList) => [...prevList, newShuttleObj]);
+        // Clear the parameter so it is not added again.
+        router.setParams({ newShuttle: undefined });
+      }
     }
-  };
+  }, [params.newShuttle]);
 
-  // Delete a shuttle
   const handleDelete = (id) => {
     setShuttleList(shuttleList.filter((item) => item.id !== id));
   };
 
   return (
-    <View style={globalStyles.container}>
+    <View style={[globalStyles.container, styles.fullScreen]}>
       {/* "Select Shuttle" header row */}
       <View style={styles.selectShuttleContainer}>
         <Text style={styles.selectShuttleText}>Select shuttle</Text>
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
+        <TouchableOpacity onPress={() => router.push('/add-shuttle')}>
           <Text style={styles.addIcon}>+</Text>
         </TouchableOpacity>
       </View>
@@ -61,7 +57,6 @@ const Inspect = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}
           renderItem={({ item }) => (
-            // When a user taps on a list item, navigate to the Confirm screen
             <TouchableOpacity
               onPress={() =>
                 router.push({
@@ -69,19 +64,19 @@ const Inspect = () => {
                   params: {
                     driver: item.shuttleDriver,
                     plate: item.shuttlePlatNumber,
+                    route: item.route,
                   },
                 })
               }
             >
               <View style={globalStyles.listItem}>
                 <View style={globalStyles.listItemLeft}>
-                  <Text style={globalStyles.listItemDate}>{item.shuttleDriver}</Text>
-                  <Text style={globalStyles.listItemPrimary}>{item.shuttlePlatNumber}</Text>
+                  <Text style={globalStyles.listItemDate}>{item.route}</Text>
+                  <Text style={globalStyles.listItemPrimary}>
+                    {item.shuttleDriver} - {item.shuttlePlatNumber}
+                  </Text>
                 </View>
-                <TouchableOpacity
-                  onPress={() => handleDelete(item.id)}
-                  style={styles.deleteButton}
-                >
+                <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
                   <Text style={styles.deleteButtonText}>Delete</Text>
                 </TouchableOpacity>
               </View>
@@ -89,50 +84,15 @@ const Inspect = () => {
           )}
         />
       </View>
-
-      {/* Modal Popup for Adding a Shuttle */}
-      <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Shuttle</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="First Name"
-              value={newFirstName}
-              onChangeText={setNewFirstName}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Last Name"
-              value={newLastName}
-              onChangeText={setNewLastName}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Plate Number"
-              value={newPlate}
-              onChangeText={setNewPlate}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                style={styles.modalButton}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={addShuttle} style={styles.modalButton}>
-                <Text style={styles.modalButtonText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
 
 const styles = {
-  /* Header row styles */
+  fullScreen: {
+    flex: 1,
+    backgroundColor: '#FFF',
+  },
   selectShuttleContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -148,7 +108,6 @@ const styles = {
     fontSize: 34,
     fontWeight: 'bold',
   },
-  /* Delete button styles */
   deleteButton: {
     padding: 10,
     backgroundColor: '#e74c3c',
@@ -158,44 +117,6 @@ const styles = {
   deleteButtonText: {
     color: '#FFF',
     fontSize: 14,
-  },
-  /* Modal Styles */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  input: {
-    backgroundColor: '#EAEAEA',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    height: 50,
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 15,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalButton: {
-    padding: 10,
-  },
-  modalButtonText: {
-    fontSize: 16,
-    color: '#3578E5',
   },
 };
 
