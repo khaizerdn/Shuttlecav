@@ -163,6 +163,12 @@ const globalStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  modalDeleteTextLink: {
+    color: '#3578E5',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 20,
+  },
   actionButton: {
     flex: 1,
     height: 50,

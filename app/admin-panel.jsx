@@ -169,13 +169,13 @@ const AdminPanel = () => {
           <View style={globalStyles.modalContainer}>
               <Text style={globalStyles.modalTitle}>Edit Passenger Type</Text>
             <TextInput
-              style={styles.modalInput}
+              style={globalStyles.input}
               value={tempPassengerType}
               onChangeText={setTempPassengerType}
               placeholder="Passenger Type"
             />
             <TextInput
-              style={styles.modalInput}
+              style={globalStyles.input}
               value={tempFareRate}
               onChangeText={setTempFareRate}
               placeholder="Fare Rate"
@@ -190,7 +190,7 @@ const AdminPanel = () => {
               </TouchableOpacity>
             </View>
             <TouchableOpacity onPress={deletePassengerType}>
-              <Text style={styles.deleteTextLink}>Delete</Text>
+              <Text style={globalStyles.modalDeleteTextLink}>Delete</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -220,7 +220,7 @@ const AdminPanel = () => {
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Edit Route</Text>
             <TextInput
-              style={styles.modalInput}
+              style={globalStyles.input}
               value={tempRoute}
               onChangeText={setTempRoute}
               placeholder="Route"
@@ -235,7 +235,7 @@ const AdminPanel = () => {
             </View>
 
             <TouchableOpacity onPress={deleteRouteEdit}>
-              <Text style={styles.deleteTextLink}>Delete</Text>
+              <Text style={globalStyles.modalDeleteTextLink}>Delete</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -247,13 +247,13 @@ const AdminPanel = () => {
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Add Passenger Type</Text>
             <TextInput
-              style={styles.modalInput}
+              style={globalStyles.input}
               placeholder="Passenger Type"
               value={newPassengerType}
               onChangeText={setNewPassengerType}
             />
             <TextInput
-              style={styles.modalInput}
+              style={globalStyles.input}
               placeholder="Fare Rate"
               value={newPassengerFare}
               onChangeText={setNewPassengerFare}
@@ -277,7 +277,7 @@ const AdminPanel = () => {
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Add Route</Text>
             <TextInput
-              style={styles.modalInput}
+              style={globalStyles.input}
               placeholder="Route"
               value={newRoute}
               onChangeText={setNewRoute}
@@ -314,23 +314,6 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 16,
     textAlign: 'center',
-  },
-  modalInput: {
-    width: '100%',
-    height: 40,
-    borderColor: '#CCC',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    textAlign: 'center',
-    fontSize: 16,
-    marginVertical: 10,
-  },
-  deleteTextLink: {
-    color: '#3578E5',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 20,
   },
 });
 
