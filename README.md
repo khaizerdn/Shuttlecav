@@ -7,13 +7,6 @@ Try to change the ip address on /app/config.js
 CANT CONNECT MOBILE
 Use wifi not LAN
 
-
 Note:
 1. Admin should have the ability to change the fare rates for a specific type of commuter.
 2. On start-inspection.jsx, it should show the ID next to the commuter type. On the right side is the amount they are paying.
-3. On start-inspection.jsx, when creating a shuttle it should have also the input of the route.
-
-
--------------
-
-- Fix the wrong notice when registering a NFC Card that is exist or used by other user

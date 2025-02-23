@@ -89,7 +89,7 @@ const globalStyles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#EAEAEA',
     padding: 10,
-    borderRadius: 8,
+    borderRadius: 10,
     marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',

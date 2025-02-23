@@ -13,6 +13,7 @@ export default function StartInspection() {
   const [scannedLogs, setScannedLogs] = useState([]);
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [showNfcDisabledModal, setShowNfcDisabledModal] = useState(false);
+  const [showCountsModal, setShowCountsModal] = useState(false);
 
   // Always show these passenger types
   const passengerTypes = ['PWD', 'Senior', 'Student', 'Regular'];
@@ -77,19 +78,35 @@ export default function StartInspection() {
     return acc;
   }, {});
 
+  // Function to delete a log item directly
+  const handleDeleteLog = (id) => {
+    setScannedLogs((prevLogs) => prevLogs.filter((log) => log.id !== id));
+  };
+
   const renderLogItem = ({ item }) => (
     <View style={globalStyles.listItem}>
       <View style={globalStyles.listItemLeft}>
         <Text style={globalStyles.listItemDate}>{item.timestamp}</Text>
-        <Text style={globalStyles.listItemPrimary}>{item.passengerType}</Text>
+        <Text style={globalStyles.listItemPrimary}>
+          {item.passengerType}{' '}
+          <Text style={globalStyles.listItemSecondary}>
+            {item.tagId ? `${item.tagId}` : ''}
+          </Text>
+        </Text>
       </View>
       <View style={globalStyles.listItemRight}>
-        <Text style={globalStyles.listItemSecondary}>
-          {item.tagId ? `(Tag: ${item.tagId})` : ''}
-        </Text>
+        <TouchableOpacity
+          style={globalStyles.redListButton}
+          onPress={() => handleDeleteLog(item.id)}
+        >
+          <Text style={globalStyles.listButtonText}>Delete</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
+
+  // Compute total money collected (assuming $10 per passenger)
+  const totalMoney = scannedLogs.length * 10;
 
   return (
     <View style={[globalStyles.container, { padding: 20, backgroundColor: '#FFF' }]}>
@@ -103,26 +120,12 @@ export default function StartInspection() {
         </View>
       </View>
 
-      {/* Separator as a dedicated line */}
+      {/* Separator */}
       <View style={globalStyles.separator} />
 
       {/* Recent Logs Title */}
       <View style={globalStyles.sectionTitleContainer}>
         <Text style={globalStyles.sectionTitle}>Recent logs:</Text>
-      </View>
-
-      {/* Passenger Counts Row */}
-      <View style={styles.passengerCountsRow}>
-        {passengerTypes.map((type) => (
-          <View key={type} style={styles.passengerCountContainer}>
-            <Text style={styles.passengerCountType}>{type}</Text>
-            <Text style={styles.passengerCountValue}>{passengerCounts[type] || 0}</Text>
-          </View>
-        ))}
-        <View style={[styles.passengerCountContainer, styles.totalContainer]}>
-          <Text style={[styles.passengerCountType, styles.totalText]}>Total</Text>
-          <Text style={[styles.passengerCountValue, styles.totalText]}>{scannedLogs.length}</Text>
-        </View>
       </View>
 
       {/* Logs */}
@@ -138,13 +141,29 @@ export default function StartInspection() {
             showsVerticalScrollIndicator={false}
           />
         )}
+      </View>
+      <View style={globalStyles.separator} />
+
+      {/* Summary Container: Total Passengers (clickable), Plus Button, Total Money */}
+      <View style={styles.summaryContainer}>
         <TouchableOpacity
-          style={[styles.plusButton, !scanning && styles.disabledPlusButton]}
+          style={styles.summaryItem}
+          onPress={() => setShowCountsModal(true)}
+        >
+          <Text style={styles.summaryLabel}>Total Passengers</Text>
+          <Text style={styles.summaryValue}>{scannedLogs.length}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.plusButtonSummary, !scanning && { backgroundColor: 'grey' }]}
           onPress={handleManualAdd}
           disabled={!scanning}
         >
           <Text style={styles.plusButtonText}>+</Text>
         </TouchableOpacity>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Total Money</Text>
+          <Text style={styles.summaryValue}>${totalMoney}</Text>
+        </View>
       </View>
 
       {/* Start/End Button */}
@@ -166,21 +185,38 @@ export default function StartInspection() {
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Select Passenger Type</Text>
-            <TouchableOpacity style={globalStyles.button} onPress={() => handlePassengerSelect('PWD')}>
-              <Text style={globalStyles.buttonText}>PWD</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={globalStyles.button} onPress={() => handlePassengerSelect('Senior')}>
-              <Text style={globalStyles.buttonText}>Senior</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={globalStyles.button} onPress={() => handlePassengerSelect('Student')}>
-              <Text style={globalStyles.buttonText}>Student</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={globalStyles.button} onPress={() => handlePassengerSelect('Regular')}>
-              <Text style={globalStyles.buttonText}>Regular</Text>
-            </TouchableOpacity>
+            {passengerTypes.map((type) => (
+              <TouchableOpacity key={type} style={globalStyles.button} onPress={() => handlePassengerSelect(type)}>
+                <Text style={globalStyles.buttonText}>{type}</Text>
+              </TouchableOpacity>
+            ))}
             <TouchableOpacity style={globalStyles.cancelButton} onPress={handleCancel}>
               <Text style={globalStyles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Passenger Counts Modal */}
+      <Modal visible={showCountsModal} animationType="slide" transparent={true}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalContainer}>
+            <Text style={globalStyles.modalTitle}>Number of Passengers</Text>
+            {passengerTypes.map((type) => (
+              <View key={type} style={globalStyles.listItem}>
+                <View style={styles.leftContainer}>
+                  <View style={styles.countContainer}>
+                    <Text style={styles.countText}>{passengerCounts[type] || 0}</Text>
+                  </View>
+                  <Text style={[globalStyles.listItemPrimary, { marginLeft: 10 }]}>{type}</Text>
+                </View>
+              </View>
+            ))}
+            <View style={globalStyles.modalButtons}>
+              <TouchableOpacity style={globalStyles.button} onPress={() => setShowCountsModal(false)}>
+                <Text style={globalStyles.buttonText}>Go back</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -196,61 +232,67 @@ export default function StartInspection() {
 }
 
 const styles = StyleSheet.create({
-  passengerCountsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  passengerCountContainer: {
-    flex: 1,
-    backgroundColor: '#EAEAEA',
-    paddingVertical: 5,
-    alignItems: 'center',
-    marginHorizontal: 4,
-    borderRadius: 5,
-  },
-  passengerCountType: {
-    fontSize: 12,
-    color: '#333',
-  },
-  passengerCountValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  totalContainer: {
-    // Additional styling for the Total container if needed.
-  },
-  totalText: {
-    color: '#3578E5',
-  },
   logsContainer: {
     flex: 1,
     width: '100%',
-    marginBottom: 20,
-    position: 'relative',
   },
   logsPlaceholder: {
     color: '#777',
     fontSize: 16,
+    alignSelf: 'center',
   },
-  plusButton: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
+  summaryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#EAEAEA',
+    height: 60,
+    borderRadius: 10,
+    justifyContent: 'center',
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: '#333',
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  plusButtonSummary: {
     backgroundColor: '#3578E5',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
+    marginHorizontal: 10,
   },
   plusButtonText: {
     color: '#FFF',
     fontSize: 24,
     lineHeight: 24,
   },
-  disabledPlusButton: {
-    backgroundColor: 'grey',
-  },  
+  leftContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  countContainer: {
+    backgroundColor: '#D3D3D3',
+    borderRadius: 5,
+    padding: 10,
+    width: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  countText: {
+    color: '#000',
+    fontSize: 16,
+    textAlign: 'center',
+  },
 });
