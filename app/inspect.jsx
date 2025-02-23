@@ -195,7 +195,6 @@ const Inspect = () => {
 
       {/* Delete Confirmation Modal (Scrollable) */}
       <Modal visible={deleteModalVisible} animationType="none" transparent={true}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
           <View style={globalStyles.modalOverlay}>
             <View style={globalStyles.modalContainer}>
               <Text style={globalStyles.modalTitle}>Confirm Deletion</Text>
@@ -230,7 +229,6 @@ const Inspect = () => {
               </View>
             </View>
           </View>
-        </ScrollView>
       </Modal>
 
       {/* Add Shuttle Modal (Scrollable) */}
