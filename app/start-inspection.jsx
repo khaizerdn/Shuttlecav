@@ -138,7 +138,11 @@ export default function StartInspection() {
             showsVerticalScrollIndicator={false}
           />
         )}
-        <TouchableOpacity style={styles.plusButton} onPress={handleManualAdd}>
+        <TouchableOpacity
+          style={[styles.plusButton, !scanning && styles.disabledPlusButton]}
+          onPress={handleManualAdd}
+          disabled={!scanning}
+        >
           <Text style={styles.plusButtonText}>+</Text>
         </TouchableOpacity>
       </View>
@@ -182,10 +186,10 @@ export default function StartInspection() {
       </Modal>
 
       {/* NFC Disabled Modal */}
-      <NfcDisabledModal 
-        visible={showNfcDisabledModal} 
-        onEnable={handleEnableNFC} 
-        onCancel={handleCancelEnableNFC} 
+      <NfcDisabledModal
+        visible={showNfcDisabledModal}
+        onEnable={handleEnableNFC}
+        onCancel={handleCancelEnableNFC}
       />
     </View>
   );
@@ -246,4 +250,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 24,
   },
+  disabledPlusButton: {
+    backgroundColor: 'grey',
+  },  
 });
