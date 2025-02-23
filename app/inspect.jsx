@@ -1,47 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList } from 'react-native';
+// Inspect.jsx
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, FlatList, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import globalStyles from './globalstyles';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { config } from './config';
 
 const Inspect = () => {
   const router = useRouter();
-  const params = useLocalSearchParams();
+  const [shuttleList, setShuttleList] = useState([]);
 
-  // Initial shuttle data
-  const [shuttleList, setShuttleList] = useState([
-    { id: '1', shuttleDriver: 'Juan Masipag', shuttlePlatNumber: 'ABC123', route: 'Carmona Estates to Waltermart' },
-    { id: '2', shuttleDriver: 'Juan Tamad', shuttlePlatNumber: 'ABC123', route: 'Waltermart to Carmona Estates' },
-    { id: '3', shuttleDriver: 'Juan Saktolang', shuttlePlatNumber: 'ABC123', route: 'Carmona Estates to Waltermart' },
-  ]);
-
-  // If a new shuttle is passed via route parameters, add it to the list.
-  useEffect(() => {
-    if (params.newShuttle) {
-      let newShuttleObj = params.newShuttle;
-      // Since we passed the shuttle as a JSON string, parse it.
-      try {
-        newShuttleObj = JSON.parse(newShuttleObj);
-      } catch (error) {
-        console.error("Failed to parse newShuttle param:", error);
-        return;
+  const fetchShuttles = async () => {
+    const token = await AsyncStorage.getItem('userToken');
+    try {
+      const response = await fetch(`${config.API_URL}/shuttles`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setShuttleList(data);
+      } else {
+        const errorData = await response.json();
+        Alert.alert('Error', errorData.message || 'Failed to fetch shuttles');
       }
-      if (newShuttleObj && newShuttleObj.shuttleDriver) {
-        // Create a unique ID for the new shuttle.
-        newShuttleObj.id = Date.now().toString();
-        setShuttleList((prevList) => [...prevList, newShuttleObj]);
-        // Clear the parameter so it is not added again.
-        router.setParams({ newShuttle: undefined });
-      }
+    } catch (error) {
+      console.error('Error fetching shuttles:', error);
     }
-  }, [params.newShuttle]);
+  };
 
-  const handleDelete = (id) => {
-    setShuttleList(shuttleList.filter((item) => item.id !== id));
+  // Re-fetch shuttles every time this screen is focused.
+  useFocusEffect(
+    useCallback(() => {
+      fetchShuttles();
+    }, [])
+  );
+
+  // Delete a shuttle record (calls the DELETE endpoint)
+  const handleDelete = async (id) => {
+    const token = await AsyncStorage.getItem('userToken');
+    try {
+      const response = await fetch(`${config.API_URL}/shuttles/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        setShuttleList(shuttleList.filter((item) => item.id !== id));
+      } else {
+        const errorData = await response.json();
+        Alert.alert('Error', errorData.message || 'Failed to delete shuttle');
+      }
+    } catch (error) {
+      console.error('Error deleting shuttle:', error);
+    }
   };
 
   return (
     <View style={[globalStyles.container, styles.fullScreen]}>
-      {/* "Select Shuttle" header row */}
+      {/* Header Row */}
       <View style={styles.selectShuttleContainer}>
         <Text style={styles.selectShuttleText}>Select shuttle</Text>
         <TouchableOpacity onPress={() => router.push('/add-shuttle')}>
@@ -111,3 +126,4 @@ const styles = {
 };
 
 export default Inspect;
+``

@@ -213,6 +213,87 @@ app.post('/unlink-nfc', (req, res) => {
   }
 });
 
+// ----------------------
+// AUTHENTICATION MIDDLEWARE
+// ----------------------
+const authenticateToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // decoded should include username (and userId if needed)
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+};
+
+// ----------------------
+// SHUTTLE ENDPOINTS
+// ----------------------
+
+// Add a new shuttle (POST /shuttles)
+app.post('/shuttles', authenticateToken, (req, res) => {
+  const { shuttleDriver, shuttlePlatNumber, route } = req.body;
+  const username = req.user.username;
+  if (!shuttleDriver || !shuttlePlatNumber || !route) {
+    return res.status(400).json({ message: 'Missing shuttle information' });
+  }
+  // Generate a unique ID (you can adjust the logic as needed)
+  const id = Date.now().toString();
+  const query = `
+    INSERT INTO created_shuttle (id, username, shuttleDriver, shuttlePlatNumber, route)
+    VALUES (?, ?, ?, ?, ?)
+  `;
+  db.query(query, [id, username, shuttleDriver, shuttlePlatNumber, route], (err, result) => {
+    if (err) {
+      console.error('Error inserting shuttle:', err);
+      return res.status(500).json({ message: 'Error adding shuttle' });
+    }
+    return res.status(200).json({ message: 'Shuttle added successfully', id });
+  });
+});
+
+// Get shuttles for the logged‑in user (GET /shuttles)
+app.get('/shuttles', authenticateToken, (req, res) => {
+  const username = req.user.username;
+  const query = 'SELECT * FROM created_shuttle WHERE username = ?';
+  db.query(query, [username], (err, results) => {
+    if (err) {
+      console.error('Error fetching shuttles:', err);
+      return res.status(500).json({ message: 'Error fetching shuttles' });
+    }
+    return res.status(200).json(results);
+  });
+});
+
+// Delete a shuttle by id (DELETE /shuttles/:id)
+app.delete('/shuttles/:id', authenticateToken, (req, res) => {
+  const username = req.user.username;
+  const shuttleId = req.params.id;
+  // Ensure the shuttle belongs to the current user before deleting
+  const checkQuery = 'SELECT * FROM created_shuttle WHERE id = ? AND username = ?';
+  db.query(checkQuery, [shuttleId, username], (err, results) => {
+    if (err) {
+      console.error('Error checking shuttle:', err);
+      return res.status(500).json({ message: 'Error checking shuttle' });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'Shuttle not found or unauthorized' });
+    }
+    const deleteQuery = 'DELETE FROM created_shuttle WHERE id = ? AND username = ?';
+    db.query(deleteQuery, [shuttleId, username], (err, result) => {
+      if (err) {
+        console.error('Error deleting shuttle:', err);
+        return res.status(500).json({ message: 'Error deleting shuttle' });
+      }
+      return res.status(200).json({ message: 'Shuttle deleted successfully' });
+    });
+  });
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

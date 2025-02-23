@@ -1,7 +1,10 @@
+// AddShuttle.jsx
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import globalStyles from './globalstyles';
+import { config } from './config';
 
 const AddShuttle = () => {
   const router = useRouter();
@@ -17,7 +20,7 @@ const AddShuttle = () => {
     setNewRouteTo(newRouteFrom);
   };
 
-  const addShuttle = () => {
+  const addShuttle = async () => {
     if (
       newFirstName.trim() &&
       newLastName.trim() &&
@@ -25,23 +28,42 @@ const AddShuttle = () => {
       newRouteFrom.trim() &&
       newRouteTo.trim()
     ) {
-      // Create the new shuttle object.
       const newShuttleObj = {
         shuttleDriver: `${newFirstName.trim()} ${newLastName.trim()}`,
         shuttlePlatNumber: newPlate.trim(),
         route: `${newRouteFrom.trim()} to ${newRouteTo.trim()}`,
       };
 
-      // Attach the new shuttle to the search parameters and navigate back.
-      router.setParams({ newShuttle: JSON.stringify(newShuttleObj) });
-      router.back();
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const response = await fetch(`${config.API_URL}/shuttles`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(newShuttleObj),
+        });
+
+        if (response.ok) {
+          Alert.alert('Success', 'Shuttle added successfully');
+          router.back();
+        } else {
+          const errorData = await response.json();
+          Alert.alert('Error', errorData.message || 'Failed to add shuttle');
+        }
+      } catch (error) {
+        console.error('Error adding shuttle:', error);
+        Alert.alert('Error', 'An unexpected error occurred');
+      }
+    } else {
+      Alert.alert('Validation', 'Please fill out all fields');
     }
   };
 
   return (
     <View style={styles.fullScreen}>
       <Text style={styles.sectionTitle}>Driver and Shuttle Information</Text>
-      {/* Driver Inputs */}
       <TextInput
         style={styles.input}
         placeholder="Driver's First Name"
@@ -60,9 +82,7 @@ const AddShuttle = () => {
         value={newPlate}
         onChangeText={setNewPlate}
       />
-      {/* Divider */}
       <View style={styles.divider} />
-      {/* Route Section */}
       <Text style={styles.sectionTitle}>Route</Text>
       <View style={styles.routeContainer}>
         <View style={styles.routeInputContainer}>
@@ -87,7 +107,6 @@ const AddShuttle = () => {
           />
         </View>
       </View>
-      {/* Add Button attached to the bottom */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={globalStyles.button} onPress={addShuttle}>
           <Text style={globalStyles.buttonText}>Add</Text>
@@ -151,7 +170,7 @@ const styles = {
     color: '#333',
   },
   buttonContainer: {
-    marginTop: 'auto', // Pushes the Add button to the very bottom
+    marginTop: 'auto',
   },
 };
 
