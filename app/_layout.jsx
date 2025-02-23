@@ -28,8 +28,8 @@ export default function RootLayout() {
         <Stack.Screen name="inspect" options={{ title: 'Inspect', headerShown: true }} />
         <Stack.Screen name="inspection-logs" options={{ title: 'Inspection Logs', headerShown: true }} />
         <Stack.Screen name="start-inspection" options={{ title: 'Start Inspection', headerShown: true }} />
-        {/* New Add Shuttle Page */}
         <Stack.Screen name="add-shuttle" options={{ title: 'Add Shuttle', headerShown: true }} />
+        <Stack.Screen name="admin-panel" options={{ title: 'Admin Panel', headerShown: true }} />
       </Stack>
     </ThemeProvider>
   );

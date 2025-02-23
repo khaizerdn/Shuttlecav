@@ -140,6 +140,32 @@ const globalStyles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
   },
+  modalText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    width: '100%',
+    marginTop: 20,
+    gap: 20,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  actionButton: {
+    flex: 1,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  actionButtonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
 });
 
 export default globalStyles;

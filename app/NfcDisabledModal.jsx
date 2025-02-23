@@ -1,61 +1,36 @@
 // NfcDisabledModal.js
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, Text, TouchableOpacity } from 'react-native';
 import globalStyles from './globalstyles';
 
 const NfcDisabledModal = ({ visible, onEnable, onCancel }) => {
   return (
     <Modal visible={visible} animationType="fade" transparent>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalText}>
-            Your NFC is disabled. Would you like to enable it?
+      <View style={globalStyles.modalOverlay}>
+        <View style={globalStyles.modalContainer}>
+          <Text style={globalStyles.modalTitle}>NFC Disabled</Text>
+          <Text style={globalStyles.modalText}>
+            Would you like to enable it?
           </Text>
-          <View style={styles.buttonContainer}>
+          <View style={globalStyles.modalButtons}>
             <TouchableOpacity
-              style={[globalStyles.button, { backgroundColor: 'red', width: 100 }]}
+              style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]}
               onPress={onCancel}
             >
-              <Text style={globalStyles.buttonText}>No</Text>
+              <Text style={globalStyles.actionButtonText}>No</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[globalStyles.button, { width: 100 }]}
+              style={[globalStyles.actionButton, { backgroundColor: '#3578E5' }]}
               onPress={onEnable}
             >
-              <Text style={globalStyles.buttonText}>Yes</Text>
+              <Text style={globalStyles.actionButtonText}>Yes</Text>
             </TouchableOpacity>
+
           </View>
         </View>
       </View>
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    maxWidth: 250,
-  },
-});
 
 export default NfcDisabledModal;

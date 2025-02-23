@@ -23,6 +23,9 @@ const Menu = () => {
       <TouchableOpacity onPress={() => router.push('/activity-logs')}>
         <Text style={styles.menuItem}>Activity Logs</Text>
       </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('/admin-panel')}>
+        <Text style={styles.menuItem}>Admin Panel</Text>
+      </TouchableOpacity>
       <TouchableOpacity onPress={() => router.push('/inspect')}>
         <Text style={styles.menuItem}>Inspect</Text>
       </TouchableOpacity>

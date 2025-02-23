@@ -7,14 +7,16 @@ import useNFC from './UseNFC';
 import NfcDisabledModal from './NfcDisabledModal';
 
 export default function StartInspection() {
-  const { driver, plate } = useLocalSearchParams();
+  const { driver, plate, route } = useLocalSearchParams();
   const { scanning, tagData, startScanning, endScanning, checkNfcEnabled, enableNFC } = useNFC();
 
   const [scannedLogs, setScannedLogs] = useState([]);
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [showNfcDisabledModal, setShowNfcDisabledModal] = useState(false);
 
-  // Show the passenger modal when a tag is scanned (and only if it isn’t already visible)
+  // Always show these passenger types
+  const passengerTypes = ['PWD', 'Senior', 'Student', 'Regular'];
+
   useEffect(() => {
     if (tagData && tagData.id && !showPassengerModal) {
       setShowPassengerModal(true);
@@ -30,7 +32,6 @@ export default function StartInspection() {
     };
     setScannedLogs((prevLogs) => [newLog, ...prevLogs]);
     setShowPassengerModal(false);
-    // Restart scanning after handling the current tag
     if (tagData && tagData.id) {
       startScanning();
     }
@@ -47,8 +48,6 @@ export default function StartInspection() {
     }
   };
 
-  // When the Start button is pressed, check if NFC is enabled.
-  // If enabled, begin scanning; otherwise, show the NFC disabled modal.
   const handleStartInspection = async () => {
     const isNfcEnabled = await checkNfcEnabled();
     if (isNfcEnabled) {
@@ -58,7 +57,6 @@ export default function StartInspection() {
     }
   };
 
-  // Handles enabling NFC from the modal.
   const handleEnableNFC = async () => {
     await enableNFC();
     setShowNfcDisabledModal(false);
@@ -71,6 +69,13 @@ export default function StartInspection() {
   const handleCancelEnableNFC = () => {
     setShowNfcDisabledModal(false);
   };
+
+  // Compute counts for each passenger type from scannedLogs
+  const passengerCounts = scannedLogs.reduce((acc, log) => {
+    const type = log.passengerType;
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {});
 
   const renderLogItem = ({ item }) => (
     <View style={globalStyles.listItem}>
@@ -87,19 +92,41 @@ export default function StartInspection() {
   );
 
   return (
-    <View style={[globalStyles.container, { padding: 20 }]}>
-      {/* Header: Driver and Plate */}
-      <View style={styles.headerRow}>
-        <Text style={styles.headerText}>{driver || 'N/A'}</Text>
-        <Text style={styles.headerText}>{plate || 'N/A'}</Text>
+    <View style={[globalStyles.container, { padding: 20, backgroundColor: '#FFF' }]}>
+      {/* Shuttle Info Header */}
+      <View style={globalStyles.listItem}>
+        <View style={globalStyles.listItemLeft}>
+          <Text style={globalStyles.listItemDate}>{route || 'N/A'}</Text>
+          <Text style={globalStyles.listItemPrimary}>
+            {driver ? driver : 'N/A'} - {plate ? plate : 'N/A'}
+          </Text>
+        </View>
+      </View>
+
+      {/* Separator as a dedicated line */}
+      <View style={styles.separator} />
+
+      {/* Recent Logs Title */}
+      <Text style={globalStyles.listTitle}>Recent logs:</Text>
+
+      {/* Passenger Counts Row */}
+      <View style={styles.passengerCountsRow}>
+        {passengerTypes.map((type) => (
+          <View key={type} style={styles.passengerCountContainer}>
+            <Text style={styles.passengerCountType}>{type}</Text>
+            <Text style={styles.passengerCountValue}>{passengerCounts[type] || 0}</Text>
+          </View>
+        ))}
+        <View style={[styles.passengerCountContainer, styles.totalContainer]}>
+          <Text style={[styles.passengerCountType, styles.totalText]}>Total</Text>
+          <Text style={[styles.passengerCountValue, styles.totalText]}>{scannedLogs.length}</Text>
+        </View>
       </View>
 
       {/* Logs */}
       <View style={styles.logsContainer}>
         {scannedLogs.length === 0 ? (
-          <Text style={styles.logsPlaceholder}>
-            Scanned NFC logs will appear here.
-          </Text>
+          <Text style={styles.logsPlaceholder}>Scanned NFC logs will appear here.</Text>
         ) : (
           <FlatList
             data={scannedLogs}
@@ -163,15 +190,39 @@ export default function StartInspection() {
 }
 
 const styles = StyleSheet.create({
-  headerRow: {
+  separator: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#EAEAEA',
+    marginVertical: 10,
+  },
+  passengerCountsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 15,
+    marginBottom: 10,
   },
-  headerText: {
-    fontSize: 18,
+  passengerCountContainer: {
+    flex: 1,
+    backgroundColor: '#EAEAEA',
+    paddingVertical: 5,
+    alignItems: 'center',
+    marginHorizontal: 4,
+    borderRadius: 5,
+  },
+  passengerCountType: {
+    fontSize: 12,
+    color: '#333',
+  },
+  passengerCountValue: {
+    fontSize: 14,
     fontWeight: 'bold',
+    color: '#333',
+  },
+  totalContainer: {
+    // Additional styling for the Total container if needed.
+  },
+  totalText: {
+    color: '#3578E5',
   },
   logsContainer: {
     flex: 1,
@@ -182,7 +233,6 @@ const styles = StyleSheet.create({
   logsPlaceholder: {
     color: '#777',
     fontSize: 16,
-    textAlign: 'center',
   },
   plusButton: {
     position: 'absolute',

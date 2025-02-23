@@ -160,14 +160,14 @@ const styles = {
     width: '100%',
   },
   swapButton: {
-    backgroundColor: '#EAEAEA',
+    backgroundColor: '#3578E5',
     padding: 10,
     borderRadius: 5,
     marginVertical: 10,
   },
   swapButtonText: {
     fontSize: 16,
-    color: '#333',
+    color: '#fff',
   },
   buttonContainer: {
     marginTop: 'auto',
