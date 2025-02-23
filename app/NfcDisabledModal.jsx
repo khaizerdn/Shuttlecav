@@ -5,7 +5,7 @@ import globalStyles from './globalstyles';
 
 const NfcDisabledModal = ({ visible, onEnable, onCancel }) => {
   return (
-    <Modal visible={visible} animationType="fade" transparent>
+    <Modal visible={visible} animationType="none" transparent>
       <View style={globalStyles.modalOverlay}>
         <View style={globalStyles.modalContainer}>
           <Text style={globalStyles.modalTitle}>NFC Disabled</Text>

@@ -197,7 +197,7 @@ const Profile = () => {
       </View>
 
       {/* Modal for NFC scanning */}
-      <Modal visible={scanning} animationType="fade" transparent={false}>
+      <Modal visible={scanning} animationType="none" transparent={false}>
         <View style={styles.modalContainer}>
           <View style={styles.scanningContainer}>
             <Text style={styles.scanningTitle}>Ready to Scan</Text>
@@ -206,7 +206,7 @@ const Profile = () => {
               Please place your NFC Card at the back of your mobile device.
             </Text>
             <TouchableOpacity
-              style={[globalStyles.button, { backgroundColor: 'red', marginTop: 20 }]}
+              style={[globalStyles.button, { backgroundColor: '#e74c3c', marginTop: 20 }]}
               onPress={endScanning}
             >
               <Text style={globalStyles.buttonText}>Cancel</Text>

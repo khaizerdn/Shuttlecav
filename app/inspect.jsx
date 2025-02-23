@@ -57,10 +57,10 @@ const Inspect = () => {
   return (
     <View style={[globalStyles.container, styles.fullScreen]}>
       {/* Header Row */}
-      <View style={styles.selectShuttleContainer}>
-        <Text style={styles.selectShuttleText}>Select shuttle</Text>
+      <View style={globalStyles.sectionTitleContainer}>
+        <Text style={globalStyles.sectionTitle}>Select shuttle</Text>
         <TouchableOpacity onPress={() => router.push('/add-shuttle')}>
-          <Text style={styles.addIcon}>+</Text>
+          <Text style={globalStyles.sectionAddIcon}>+</Text>
         </TouchableOpacity>
       </View>
 
@@ -107,21 +107,6 @@ const styles = {
   fullScreen: {
     flex: 1,
     backgroundColor: '#FFF',
-  },
-  selectShuttleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-    width: '100%',
-  },
-  selectShuttleText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  addIcon: {
-    fontSize: 34,
-    fontWeight: 'bold',
   },
 };
 

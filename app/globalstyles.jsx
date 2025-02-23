@@ -115,16 +115,26 @@ const globalStyles = StyleSheet.create({
     fontSize: 16,
     color: '#e74c3c',
   },
-  listTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
     width: '100%',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  sectionAddIcon: {
+    fontSize: 34,
+    fontWeight: 'bold',
+    color: '#3578E5',
   },
   // ===== Global Modal Styles =====
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -165,6 +175,13 @@ const globalStyles = StyleSheet.create({
     color: '#FFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  // Separator
+  separator: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#EAEAEA',
+    marginVertical: 10,
   },
 });
 

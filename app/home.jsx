@@ -79,7 +79,9 @@ const Home = () => {
 
       {/* Travel History Section */}
       <View style={globalStyles.listContainer}>
-        <Text style={globalStyles.listTitle}>Travel History:</Text>
+      <View style={globalStyles.sectionTitleContainer}>
+        <Text style={globalStyles.sectionTitle}>Travel History:</Text>
+      </View>
         <FlatList
           data={travelHistory}
           keyExtractor={(item) => item.id}

@@ -63,7 +63,9 @@ const AddShuttle = () => {
 
   return (
     <View style={styles.fullScreen}>
-      <Text style={styles.sectionTitle}>Driver and Shuttle Information</Text>
+      <View style={globalStyles.sectionTitleContainer}>
+        <Text style={globalStyles.sectionTitle}>Driver and Shuttle Information</Text>
+      </View>
       <TextInput
         style={styles.input}
         placeholder="Driver's First Name"
@@ -83,7 +85,9 @@ const AddShuttle = () => {
         onChangeText={setNewPlate}
       />
       <View style={styles.divider} />
-      <Text style={styles.sectionTitle}>Route</Text>
+      <View style={globalStyles.sectionTitleContainer}>
+        <Text style={globalStyles.sectionTitle}>Route</Text>
+      </View>
       <View style={styles.routeContainer}>
         <View style={styles.routeInputContainer}>
           <Text style={styles.routeLabel}>From</Text>
@@ -136,12 +140,6 @@ const styles = {
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
     marginVertical: 15,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    alignSelf: 'flex-start',
   },
   routeContainer: {
     flexDirection: 'column',

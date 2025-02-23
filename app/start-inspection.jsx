@@ -104,10 +104,12 @@ export default function StartInspection() {
       </View>
 
       {/* Separator as a dedicated line */}
-      <View style={styles.separator} />
+      <View style={globalStyles.separator} />
 
       {/* Recent Logs Title */}
-      <Text style={globalStyles.listTitle}>Recent logs:</Text>
+      <View style={globalStyles.sectionTitleContainer}>
+        <Text style={globalStyles.sectionTitle}>Recent logs:</Text>
+      </View>
 
       {/* Passenger Counts Row */}
       <View style={styles.passengerCountsRow}>
@@ -190,12 +192,6 @@ export default function StartInspection() {
 }
 
 const styles = StyleSheet.create({
-  separator: {
-    width: '100%',
-    height: 1,
-    backgroundColor: '#EAEAEA',
-    marginVertical: 10,
-  },
   passengerCountsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
