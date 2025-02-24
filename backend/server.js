@@ -14,12 +14,14 @@ const port = 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// MySQL connection
+// MySQL connection with settings to support BIGINT as string
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  supportBigNumbers: true,
+  bigNumberStrings: true
 });
 
 db.connect((err) => {
@@ -29,6 +31,11 @@ db.connect((err) => {
     console.log('Connected to the MySQL database');
   }
 });
+
+// FlakeID generator for unique numeric IDs
+const FlakeId = require('flake-idgen');
+const intformat = require('biguint-format');
+const flakeIdGen = new FlakeId(); // You can pass configuration options if needed
 
 // Signup Route
 app.post('/signup', (req, res) => {
@@ -43,11 +50,14 @@ app.post('/signup', (req, res) => {
       return res.status(500).json({ message: 'Error hashing password' });
     }
 
-    const query = `
-      INSERT INTO users (surname, firstname, middleinitial, age, gender, phonenumber, username, password) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    // Generate a unique numeric id using the Snowflake algorithm
+    const id = intformat(flakeIdGen.next(), 'dec'); 
 
-    db.query(query, [surname, firstname, middleinitial, age, gender, phonenumber, username, hashedPassword], (err) => {
+    const query = `
+      INSERT INTO users (id, surname, firstname, middleinitial, age, gender, phonenumber, username, password) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    db.query(query, [id, surname, firstname, middleinitial, age, gender, phonenumber, username, hashedPassword], (err) => {
       if (err) {
         return res.status(500).json({ message: 'Error signing up' });
       }
@@ -78,10 +88,15 @@ app.post('/login', (req, res) => {
       }
 
       const token = jwt.sign(
-        { userId: result[0].id, username: result[0].username },
+        { 
+          userId: result[0].id, 
+          username: result[0].username, 
+          firstname: result[0].firstname, 
+          surname: result[0].surname 
+        },
         process.env.JWT_SECRET,
-        { expiresIn: '7d' } 
-      );      
+        { expiresIn: '7d' }
+      );         
 
       return res.status(200).json({ message: 'Login successful', token });
     });
@@ -97,17 +112,16 @@ app.get('/user', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const query = 'SELECT * FROM users WHERE id = ?';
+    // Use CAST to ensure the parameter is treated as an unsigned integer
+    const query = 'SELECT * FROM users WHERE id = CAST(? AS UNSIGNED)';
     db.query(query, [decoded.userId], (err, result) => {
       if (err) {
         console.error('Database error:', err);
         return res.status(500).json({ message: 'Error fetching user info' });
       }
-
       if (result.length === 0) {
         return res.status(404).json({ message: 'User not found' });
       }
-
       const user = result[0];
       return res.status(200).json({
         firstname: user.firstname,
@@ -148,23 +162,18 @@ app.post('/link-nfc', (req, res) => {
       }
       
       if (results.length > 0) {
-        // Duplicate found for a different user – send duplication notice.
         return res.status(400).json({ message: 'This NFC card is already linked to another user.' });
       }
       
-      // Proceed to update NFC card id for current user.
+      // Update NFC card id for current user.
       const updateQuery = 'UPDATE users SET tag_id = ? WHERE id = ?';
       db.query(updateQuery, [nfcCardId, userId], (err, updateResult) => {
         if (err) {
           console.error('Database error on update query:', err);
-          // Check error for duplicate key violation.
-          if (
-            err.code === 'ER_DUP_ENTRY' ||
-            (err.sqlMessage && err.sqlMessage.includes('Duplicate entry'))
-          ) {
+          if (err.code === 'ER_DUP_ENTRY' || (err.sqlMessage && err.sqlMessage.includes('Duplicate entry'))) {
             return res.status(400).json({ message: 'This NFC card is already linked to another user.' });
           }
-          return res.status(500).json({ message: 'Error uasdadapdating NFC card ID' });
+          return res.status(500).json({ message: 'Error updating NFC card ID' });
         }
         
         if (updateResult.affectedRows === 0) {
@@ -179,8 +188,6 @@ app.post('/link-nfc', (req, res) => {
     return res.status(401).json({ message: 'Invalid token' });
   }
 });
-
-
 
 // New Route: Unlink NFC Card ID
 app.post('/unlink-nfc', (req, res) => {
@@ -223,7 +230,7 @@ const authenticateToken = (req, res, next) => {
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // decoded should include username (and userId if needed)
+    req.user = decoded; // decoded includes username, firstname, surname, and userId
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Invalid token' });
@@ -241,8 +248,8 @@ app.post('/shuttles', authenticateToken, (req, res) => {
   if (!shuttleDriver || !shuttlePlatNumber || !route_id) {
     return res.status(400).json({ message: 'Missing shuttle information' });
   }
-  // Generate a unique ID (adjust logic as needed)
-  const id = Date.now().toString();
+  // Generate a unique ID using flake-id
+  const id = intformat(flakeIdGen.next(), 'dec');
   const query = `
     INSERT INTO created_shuttle (id, username, shuttleDriver, shuttlePlatNumber, route_id)
     VALUES (?, ?, ?, ?, ?)
@@ -259,7 +266,6 @@ app.post('/shuttles', authenticateToken, (req, res) => {
 // Get shuttles for the logged‑in user (GET /shuttles)
 app.get('/shuttles', authenticateToken, (req, res) => {
   const username = req.user.username;
-  // Join with the routes table to get the latest route information
   const query = `
     SELECT cs.*, r.origin, r.destination, r.added_rate
     FROM created_shuttle cs
@@ -279,7 +285,6 @@ app.get('/shuttles', authenticateToken, (req, res) => {
 app.delete('/shuttles/:id', authenticateToken, (req, res) => {
   const username = req.user.username;
   const shuttleId = req.params.id;
-  // Ensure the shuttle belongs to the current user before deleting
   const checkQuery = 'SELECT * FROM created_shuttle WHERE id = ? AND username = ?';
   db.query(checkQuery, [shuttleId, username], (err, results) => {
     if (err) {
@@ -300,7 +305,9 @@ app.delete('/shuttles/:id', authenticateToken, (req, res) => {
   });
 });
 
-// Passenger Types Endpoints
+// ----------------------
+// PASSENGER TYPES ENDPOINTS
+// ----------------------
 
 // Get all passenger types
 app.get('/passenger-types', authenticateToken, (req, res) => {
@@ -360,7 +367,9 @@ app.delete('/passenger-types/:id', authenticateToken, (req, res) => {
   });
 });
 
-// Routes Endpoints
+// ----------------------
+// ROUTES ENDPOINTS
+// ----------------------
 
 // Get all routes
 app.get('/routes', authenticateToken, (req, res) => {
@@ -420,6 +429,91 @@ app.delete('/routes/:id', authenticateToken, (req, res) => {
   });
 });
 
+// ----------------------
+// INSPECTIONS ENDPOINT
+// ----------------------
+
+// Add a new inspection
+app.post('/inspections', authenticateToken, (req, res) => {
+  // Extract inspector info from the token.
+  const inspector_id = req.user.userId;  // now using the inspector's id
+  const inspector_fullname = req.user.firstname + ' ' + req.user.surname;
+
+  // Extract the rest of the inspection data from the request body.
+  const { driver, route, start_datetime, end_datetime, total_passengers, total_claimed_money, logs } = req.body;
+  // Generate a unique inspection id using flake-id
+  const inspectionId = intformat(flakeIdGen.next(), 'dec');
+  
+  db.beginTransaction(err => {
+    if (err) {
+      return res.status(500).json({ message: 'Transaction initiation failed' });
+    }
+    
+    const inspectionQuery = `
+      INSERT INTO inspections 
+      (id, inspector_id, inspector_fullname, driver, origin, destination, added_rate, start_datetime, end_datetime, total_passengers, total_claimed_money)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    const { origin, destination, added_rate } = route;
+    db.query(
+      inspectionQuery,
+      [
+        inspectionId,
+        inspector_id,           // logs the inspector's id
+        inspector_fullname,
+        driver || '',
+        origin || '',
+        destination || '',
+        added_rate ? parseFloat(added_rate) : 0,
+        start_datetime,
+        end_datetime,
+        total_passengers,
+        total_claimed_money
+      ],
+      (err, result) => {
+        if (err) {
+          return db.rollback(() => {
+            res.status(500).json({ message: 'Error inserting inspection data' });
+          });
+        }
+        if (logs && logs.length > 0) {
+          const logValues = logs.map(log => [
+            log.id,
+            inspectionId,
+            log.passenger_type,
+            log.tag_id,
+            log.scanned_datetime
+          ]);
+          const logQuery = 'INSERT INTO inspection_logs (id, inspection_id, passenger_type, tag_id, scanned_datetime) VALUES ?';
+          db.query(logQuery, [logValues], (err, result) => {
+            if (err) {
+              return db.rollback(() => {
+                res.status(500).json({ message: 'Error inserting inspection logs' });
+              });
+            }
+            db.commit(err => {
+              if (err) {
+                return db.rollback(() => {
+                  res.status(500).json({ message: 'Error committing transaction' });
+                });
+              }
+              return res.status(200).json({ message: 'Inspection recorded successfully' });
+            });
+          });
+        } else {
+          db.commit(err => {
+            if (err) {
+              return db.rollback(() => {
+                res.status(500).json({ message: 'Error committing transaction' });
+              });
+            }
+            return res.status(200).json({ message: 'Inspection recorded successfully' });
+          });
+        }
+      }
+    );
+  });
+});
 
 // Start the server
 app.listen(port, () => {

@@ -33,7 +33,7 @@ const SignUp = () => {
         phonenumber,
         username,
         password,
-        confirmPassword, // Include confirmPassword in the request body
+        confirmPassword, // This field is used for backend validation.
       });
       console.log(response.data);
       router.push('/');
@@ -44,23 +44,71 @@ const SignUp = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, backgroundColor: '#FFF'}}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, backgroundColor: '#FFF' }}>
       <View style={styles.container}>
-        <TextInput style={globalStyles.listItem} placeholder="Surname" value={surname} onChangeText={setSurname} />
-        <TextInput style={globalStyles.listItem} placeholder="First Name" value={firstname} onChangeText={setFirstname} />
-        <TextInput style={globalStyles.listItem} placeholder="Middle Initial" value={middleinitial} onChangeText={setMiddleInitial} />
-        <TextInput style={globalStyles.listItem} placeholder="Age" keyboardType="numeric" value={age} onChangeText={setAge} />
-        <TextInput style={globalStyles.listItem} placeholder="Gender" value={gender} onChangeText={setGender} />
-        <TextInput style={globalStyles.listItem} placeholder="Phone Number" keyboardType="phone-pad" value={phonenumber} onChangeText={setPhoneNumber} />
-        <TextInput style={globalStyles.listItem} placeholder="Username" value={username} onChangeText={setUsername} />
-        <TextInput style={globalStyles.listItem} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
-        <TextInput style={globalStyles.listItem} placeholder="Confirm Password" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} />
+        <TextInput
+          style={globalStyles.listItem}
+          placeholder="Surname"
+          value={surname}
+          onChangeText={setSurname}
+        />
+        <TextInput
+          style={globalStyles.listItem}
+          placeholder="First Name"
+          value={firstname}
+          onChangeText={setFirstname}
+        />
+        <TextInput
+          style={globalStyles.listItem}
+          placeholder="Middle Initial"
+          value={middleinitial}
+          onChangeText={setMiddleInitial}
+        />
+        <TextInput
+          style={globalStyles.listItem}
+          placeholder="Age"
+          keyboardType="numeric"
+          value={age}
+          onChangeText={setAge}
+        />
+        <TextInput
+          style={globalStyles.listItem}
+          placeholder="Gender"
+          value={gender}
+          onChangeText={setGender}
+        />
+        <TextInput
+          style={globalStyles.listItem}
+          placeholder="Phone Number"
+          keyboardType="phone-pad"
+          value={phonenumber}
+          onChangeText={setPhoneNumber}
+        />
+        <TextInput
+          style={globalStyles.listItem}
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+        />
+        <TextInput
+          style={globalStyles.listItem}
+          placeholder="Password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+        <TextInput
+          style={globalStyles.listItem}
+          placeholder="Confirm Password"
+          secureTextEntry
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
         <TouchableOpacity style={globalStyles.button} onPress={handleSignup}>
           <Text style={globalStyles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
-
   );
 };
 

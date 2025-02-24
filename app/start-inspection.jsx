@@ -7,17 +7,21 @@ import useNFC from './UseNFC';
 import NfcDisabledModal from './NfcDisabledModal';
 import { config } from './config';
 
+// Helper to format dates as MySQL datetime strings: YYYY-MM-DD HH:MM:SS
+const getMySQLDatetime = (date = new Date()) =>
+  date.toISOString().slice(0, 19).replace('T', ' ');
+
 export default function StartInspection() {
-  // Extract driver, plate, origin, destination, and added_rate from params.
+  // Extract parameters from URL (including driver's name now provided as "driver")
   const { driver, plate, origin, destination, added_rate } = useLocalSearchParams();
   const { scanning, tagData, startScanning, endScanning, checkNfcEnabled, enableNFC } = useNFC();
 
+  // States for start time, logs, modals, and passenger types
+  const [startTime, setStartTime] = useState(null);
   const [scannedLogs, setScannedLogs] = useState([]);
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [showNfcDisabledModal, setShowNfcDisabledModal] = useState(false);
   const [showCountsModal, setShowCountsModal] = useState(false);
-
-  // New state for passenger types from the DB
   const [dbPassengerTypes, setDbPassengerTypes] = useState([]);
 
   useEffect(() => {
@@ -43,16 +47,19 @@ export default function StartInspection() {
     }
   };
 
+  // Open passenger modal when NFC tag data is detected.
   useEffect(() => {
     if (tagData && tagData.id && !showPassengerModal) {
       setShowPassengerModal(true);
     }
   }, [tagData, showPassengerModal]);
 
+  // When a passenger is selected, create a log with a correctly formatted timestamp.
   const handlePassengerSelect = (passengerType) => {
     const newLog = {
       id: Date.now().toString(),
-      timestamp: new Date().toLocaleString(),
+      // Format the current date as MySQL datetime string
+      timestamp: getMySQLDatetime(),
       passengerType,
       tagId: tagData && tagData.id ? tagData.id : null,
     };
@@ -74,58 +81,92 @@ export default function StartInspection() {
     }
   };
 
+  // When starting the inspection, record a properly formatted start time and start NFC scanning.
   const handleStartInspection = async () => {
     const isNfcEnabled = await checkNfcEnabled();
     if (isNfcEnabled) {
       startScanning();
+      const currentStartTime = getMySQLDatetime();
+      setStartTime(currentStartTime);
+      await AsyncStorage.setItem('inspectionStartTime', currentStartTime);
     } else {
       setShowNfcDisabledModal(true);
     }
   };
 
-  const handleEnableNFC = async () => {
-    await enableNFC();
-    setShowNfcDisabledModal(false);
-    const isNfcEnabled = await checkNfcEnabled();
-    if (isNfcEnabled) {
-      startScanning();
+  // When ending the inspection, record end time, assemble the inspection data, and post it to the backend.
+  const handleEndInspection = async () => {
+    endScanning();
+    const endTime = getMySQLDatetime();
+    const storedStartTime = startTime || await AsyncStorage.getItem('inspectionStartTime');
+
+    const inspectionData = {
+      // The driver (driver's full name) comes from the URL parameters.
+      driver: driver || '',
+      route: {
+        origin: origin || '',
+        destination: destination || '',
+        added_rate: added_rate ? parseFloat(added_rate) : 0,
+      },
+      start_datetime: storedStartTime,
+      end_datetime: endTime,
+      total_passengers: scannedLogs.length,
+      total_claimed_money: totalMoney,
+      logs: scannedLogs.map(log => ({
+        id: log.id,
+        passenger_type: log.passengerType,
+        tag_id: log.tagId,
+        scanned_datetime: log.timestamp
+      }))
+    };
+
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/inspections`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(inspectionData),
+      });
+      if (response.ok) {
+        await AsyncStorage.removeItem('inspectionStartTime');
+        // Optionally reset state or navigate away after a successful record.
+        setStartTime(null);
+        setScannedLogs([]);
+        console.log('Inspection recorded successfully');
+      } else {
+        const errorData = await response.json();
+        console.error('Error recording inspection:', errorData.message);
+      }
+    } catch (error) {
+      console.error('Error in handleEndInspection:', error);
     }
   };
 
-  const handleCancelEnableNFC = () => {
-    setShowNfcDisabledModal(false);
-  };
-
-  // Define the route's added rate as a number.
+  // Compute values for the UI based on scanned logs and added route rate.
   const routeAddedRate = added_rate ? parseFloat(added_rate) : 0;
-
-  // For total money, sum for each scanned log:
-  // Look up the passenger rate for that log’s passenger type and add routeAddedRate.
   const totalMoney = scannedLogs.reduce((acc, log) => {
     const typeInfo = dbPassengerTypes.find(item => item.passenger_type === log.passengerType);
     const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
     return acc + (passengerRate + routeAddedRate);
   }, 0);
 
-  // Compute counts for each passenger type from scannedLogs
   const passengerCounts = scannedLogs.reduce((acc, log) => {
     const type = log.passengerType;
     acc[type] = (acc[type] || 0) + 1;
     return acc;
   }, {});
 
-  // Compute an array of passenger types that have been scanned
   const scannedPassengerTypes = dbPassengerTypes.filter(
     (item) => (passengerCounts[item.passenger_type] || 0) > 0
   );
 
-  // Function to delete a log item directly
   const handleDeleteLog = (id) => {
     setScannedLogs((prevLogs) => prevLogs.filter((log) => log.id !== id));
   };
 
-  // Render each scanned log. Here we add a left box (using listLeftBox style)
-  // that displays the fare for that log (passenger_rate + routeAddedRate).
   const renderLogItem = ({ item }) => {
     const typeInfo = dbPassengerTypes.find(it => it.passenger_type === item.passengerType);
     const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
@@ -133,16 +174,12 @@ export default function StartInspection() {
 
     return (
       <View style={globalStyles.listItem}>
-        {/* Left box for fare */}
-
         <View style={[globalStyles.listLeftBox, { marginRight: 10 }]}>
           <Text style={globalStyles.listLeftBoxSecondaryText}>PHP</Text>
           <Text style={globalStyles.listLeftBoxPrimaryText}>
-          {fare.toFixed(2)}
+            {fare.toFixed(2)}
           </Text>
         </View>
-
-        {/* Main content */}
         <View style={globalStyles.listItemLeft}>
           <Text style={globalStyles.listItemDate}>{item.timestamp}</Text>
           <Text style={globalStyles.listItemPrimary}>
@@ -166,19 +203,15 @@ export default function StartInspection() {
 
   return (
     <View style={[globalStyles.container, { padding: 20, backgroundColor: '#FFF' }]}>
-      {/* Shuttle Info Header (unchanged) */}
+      {/* Shuttle Info Header */}
       <View style={globalStyles.listItem}>
         <View style={[globalStyles.listItemLeftRow, { flex: 1, flexDirection: 'row', alignItems: 'center' }]}>
-          {/* Left box showing only the route added rate */}
-
           <View style={globalStyles.listLeftBox}>
             <Text style={globalStyles.listLeftBoxSecondaryText}>PHP</Text>
             <Text style={globalStyles.listLeftBoxPrimaryText}>
               {added_rate ? parseFloat(added_rate).toFixed(2) : '0.00'}
             </Text>
           </View>
-
-          {/* Shuttle details */}
           <View style={[globalStyles.listlocationContainer, { flex: 1, marginLeft: 10 }]}>
             <Text style={globalStyles.listItemDate}>
               {origin && destination ? `${origin} to ${destination}` : 'N/A'}
@@ -242,7 +275,7 @@ export default function StartInspection() {
       {scanning ? (
         <TouchableOpacity
           style={[globalStyles.button, { backgroundColor: '#e74c3c' }]}
-          onPress={endScanning}
+          onPress={handleEndInspection}
         >
           <Text style={globalStyles.buttonText}>End</Text>
         </TouchableOpacity>
@@ -312,8 +345,13 @@ export default function StartInspection() {
       {/* NFC Disabled Modal */}
       <NfcDisabledModal
         visible={showNfcDisabledModal}
-        onEnable={handleEnableNFC}
-        onCancel={handleCancelEnableNFC}
+        onEnable={async () => {
+          await enableNFC();
+          setShowNfcDisabledModal(false);
+          const isNfcEnabled = await checkNfcEnabled();
+          if (isNfcEnabled) startScanning();
+        }}
+        onCancel={() => setShowNfcDisabledModal(false)}
       />
     </View>
   );
