@@ -80,8 +80,8 @@ app.post('/login', (req, res) => {
       const token = jwt.sign(
         { userId: result[0].id, username: result[0].username },
         process.env.JWT_SECRET,
-        { expiresIn: '1h' }
-      );
+        { expiresIn: '7d' } 
+      );      
 
       return res.status(200).json({ message: 'Login successful', token });
     });
@@ -293,6 +293,127 @@ app.delete('/shuttles/:id', authenticateToken, (req, res) => {
     });
   });
 });
+
+// Passenger Types Endpoints
+
+// Get all passenger types
+app.get('/passenger-types', authenticateToken, (req, res) => {
+  const query = 'SELECT * FROM passenger_types';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching passenger types:', err);
+      return res.status(500).json({ message: 'Error fetching passenger types' });
+    }
+    return res.status(200).json(results);
+  });
+});
+
+// Add a new passenger type
+app.post('/passenger-types', authenticateToken, (req, res) => {
+  const { passenger_type, passenger_rate } = req.body;
+  if (!passenger_type || passenger_rate == null) {
+    return res.status(400).json({ message: 'Missing passenger type or rate' });
+  }
+  const query = 'INSERT INTO passenger_types (passenger_type, passenger_rate) VALUES (?, ?)';
+  db.query(query, [passenger_type, passenger_rate], (err, result) => {
+    if (err) {
+      console.error('Error adding passenger type:', err);
+      return res.status(500).json({ message: 'Error adding passenger type' });
+    }
+    return res.status(200).json({ message: 'Passenger type added successfully', id: result.insertId });
+  });
+});
+
+// Update a passenger type
+app.put('/passenger-types/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { passenger_type, passenger_rate } = req.body;
+  if (!passenger_type || passenger_rate == null) {
+    return res.status(400).json({ message: 'Missing passenger type or rate' });
+  }
+  const query = 'UPDATE passenger_types SET passenger_type = ?, passenger_rate = ? WHERE id = ?';
+  db.query(query, [passenger_type, passenger_rate, id], (err, result) => {
+    if (err) {
+      console.error('Error updating passenger type:', err);
+      return res.status(500).json({ message: 'Error updating passenger type' });
+    }
+    return res.status(200).json({ message: 'Passenger type updated successfully' });
+  });
+});
+
+// Delete a passenger type
+app.delete('/passenger-types/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM passenger_types WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting passenger type:', err);
+      return res.status(500).json({ message: 'Error deleting passenger type' });
+    }
+    return res.status(200).json({ message: 'Passenger type deleted successfully' });
+  });
+});
+
+// Routes Endpoints
+
+// Get all routes
+app.get('/routes', authenticateToken, (req, res) => {
+  const query = 'SELECT * FROM routes';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching routes:', err);
+      return res.status(500).json({ message: 'Error fetching routes' });
+    }
+    return res.status(200).json(results);
+  });
+});
+
+// Add a new route
+app.post('/routes', authenticateToken, (req, res) => {
+  const { origin, destination, added_rate } = req.body;
+  if (!origin || !destination || added_rate == null) {
+    return res.status(400).json({ message: 'Missing route information' });
+  }
+  const query = 'INSERT INTO routes (origin, destination, added_rate) VALUES (?, ?, ?)';
+  db.query(query, [origin, destination, added_rate], (err, result) => {
+    if (err) {
+      console.error('Error adding route:', err);
+      return res.status(500).json({ message: 'Error adding route' });
+    }
+    return res.status(200).json({ message: 'Route added successfully', id: result.insertId });
+  });
+});
+
+// Update a route
+app.put('/routes/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { origin, destination, added_rate } = req.body;
+  if (!origin || !destination || added_rate == null) {
+    return res.status(400).json({ message: 'Missing route information' });
+  }
+  const query = 'UPDATE routes SET origin = ?, destination = ?, added_rate = ? WHERE id = ?';
+  db.query(query, [origin, destination, added_rate, id], (err, result) => {
+    if (err) {
+      console.error('Error updating route:', err);
+      return res.status(500).json({ message: 'Error updating route' });
+    }
+    return res.status(200).json({ message: 'Route updated successfully' });
+  });
+});
+
+// Delete a route
+app.delete('/routes/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM routes WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting route:', err);
+      return res.status(500).json({ message: 'Error deleting route' });
+    }
+    return res.status(200).json({ message: 'Route deleted successfully' });
+  });
+});
+
 
 // Start the server
 app.listen(port, () => {

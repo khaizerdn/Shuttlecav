@@ -1,101 +1,202 @@
 // admin-panel.jsx
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, ScrollView, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import globalStyles from './globalstyles';
+import { config } from './config';
 
 const AdminPanel = () => {
-  // Initial fare rates (as strings)
-  const initialRates = {
-    PWD: '10',
-    Senior: '12',
-    Student: '8',
-    Regular: '15',
-  };
-
-  // State for fare rates, passenger types, and routes
-  const [fareRates, setFareRates] = useState(initialRates);
-  const [passengerTypes, setPassengerTypes] = useState(['PWD', 'Senior', 'Student', 'Regular']);
+  // State arrays will now be loaded from the backend.
+  const [passengerTypes, setPassengerTypes] = useState([]);
   const [routes, setRoutes] = useState([]);
 
-  // For editing passenger type (both name and fare rate)
-  const [editingPassengerType, setEditingPassengerType] = useState(null);
+  // Editing states for passenger type (object-based)
+  const [editingPassenger, setEditingPassenger] = useState(null);
   const [tempPassengerType, setTempPassengerType] = useState('');
   const [tempFareRate, setTempFareRate] = useState('');
 
-  // For editing route
-  const [editingRoute, setEditingRoute] = useState(null);
-  const [tempRoute, setTempRoute] = useState('');
+  // Editing states for route (index-based, using the route object)
+  const [editingRouteIndex, setEditingRouteIndex] = useState(null);
+  const [tempRouteFrom, setTempRouteFrom] = useState('');
+  const [tempRouteTo, setTempRouteTo] = useState('');
+  const [tempRouteRate, setTempRouteRate] = useState('');
 
-  // For adding new passenger type
+  // Modal states for adding new entries
   const [newPassengerModalVisible, setNewPassengerModalVisible] = useState(false);
   const [newPassengerType, setNewPassengerType] = useState('');
   const [newPassengerFare, setNewPassengerFare] = useState('');
 
-  // For adding new route
   const [newRouteModalVisible, setNewRouteModalVisible] = useState(false);
-  const [newRoute, setNewRoute] = useState('');
+  const [newRouteFrom, setNewRouteFrom] = useState('');
+  const [newRouteTo, setNewRouteTo] = useState('');
+  const [newRouteRate, setNewRouteRate] = useState('');
 
-  // --- Passenger Type Editing ---
-  const openPassengerEditModal = (type) => {
-    setEditingPassengerType(type);
-    setTempPassengerType(type);
-    setTempFareRate(fareRates[type]);
+  // --- Fetching Data ---
+  const fetchPassengerTypes = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/passenger-types`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPassengerTypes(data);
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to fetch passenger types');
+      }
+    } catch (error) {
+      console.error('Error fetching passenger types:', error);
+    }
   };
 
-  const savePassengerEdit = () => {
-    // If the passenger type name has changed, update the array and fareRates keys.
-    if (tempPassengerType !== editingPassengerType) {
-      setPassengerTypes(passengerTypes.map(pt => pt === editingPassengerType ? tempPassengerType : pt));
-      const updatedRates = { ...fareRates };
-      updatedRates[tempPassengerType] = tempFareRate;
-      delete updatedRates[editingPassengerType];
-      setFareRates(updatedRates);
-    } else {
-      setFareRates({ ...fareRates, [editingPassengerType]: tempFareRate });
+  const fetchRoutes = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/routes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRoutes(data);
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to fetch routes');
+      }
+    } catch (error) {
+      console.error('Error fetching routes:', error);
     }
-    setEditingPassengerType(null);
-    setTempPassengerType('');
-    setTempFareRate('');
+  };
+
+  useEffect(() => {
+    fetchPassengerTypes();
+    fetchRoutes();
+  }, []);
+
+  // --- Passenger Type Editing ---
+  const openPassengerEditModal = (passenger) => {
+    setEditingPassenger(passenger);
+    setTempPassengerType(passenger.passenger_type);
+    setTempFareRate(passenger.passenger_rate.toString());
+  };
+
+  const savePassengerEdit = async () => {
+    if (!editingPassenger) return;
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/passenger-types/${editingPassenger.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          passenger_type: tempPassengerType,
+          passenger_rate: parseFloat(tempFareRate) || 0,
+        }),
+      });
+      if (response.ok) {
+        fetchPassengerTypes();
+        cancelPassengerEdit();
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to update passenger type');
+      }
+    } catch (error) {
+      console.error('Error updating passenger type:', error);
+    }
   };
 
   const cancelPassengerEdit = () => {
-    setEditingPassengerType(null);
+    setEditingPassenger(null);
     setTempPassengerType('');
     setTempFareRate('');
   };
 
-  const deletePassengerType = () => {
-    if (!editingPassengerType) return;
-    setPassengerTypes(passengerTypes.filter(pt => pt !== editingPassengerType));
-    const updatedRates = { ...fareRates };
-    delete updatedRates[editingPassengerType];
-    setFareRates(updatedRates);
-    setEditingPassengerType(null);
-    setTempPassengerType('');
-    setTempFareRate('');
+  const deletePassengerType = async () => {
+    if (!editingPassenger) return;
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/passenger-types/${editingPassenger.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        fetchPassengerTypes();
+        cancelPassengerEdit();
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to delete passenger type');
+      }
+    } catch (error) {
+      console.error('Error deleting passenger type:', error);
+    }
   };
 
   // --- Route Editing ---
-  const openRouteEditModal = (route) => {
-    setEditingRoute(route);
-    setTempRoute(route);
+  const openRouteEditModal = (index) => {
+    const route = routes[index];
+    setEditingRouteIndex(index);
+    setTempRouteFrom(route.origin);
+    setTempRouteTo(route.destination);
+    setTempRouteRate(route.added_rate.toString());
   };
 
-  const saveRouteEdit = () => {
-    setRoutes(routes.map(r => r === editingRoute ? tempRoute : r));
-    setEditingRoute(null);
-    setTempRoute('');
+  const saveRouteEdit = async () => {
+    if (editingRouteIndex === null) return;
+    const routeToEdit = routes[editingRouteIndex];
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/routes/${routeToEdit.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          origin: tempRouteFrom,
+          destination: tempRouteTo,
+          added_rate: parseFloat(tempRouteRate) || 0,
+        }),
+      });
+      if (response.ok) {
+        fetchRoutes();
+        cancelRouteEdit();
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to update route');
+      }
+    } catch (error) {
+      console.error('Error updating route:', error);
+    }
   };
 
   const cancelRouteEdit = () => {
-    setEditingRoute(null);
-    setTempRoute('');
+    setEditingRouteIndex(null);
+    setTempRouteFrom('');
+    setTempRouteTo('');
+    setTempRouteRate('');
   };
 
-  const deleteRouteEdit = () => {
-    setRoutes(routes.filter(r => r !== editingRoute));
-    setEditingRoute(null);
-    setTempRoute('');
+  const deleteRouteEdit = async () => {
+    if (editingRouteIndex === null) return;
+    const routeToDelete = routes[editingRouteIndex];
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/routes/${routeToDelete.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        fetchRoutes();
+        cancelRouteEdit();
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to delete route');
+      }
+    } catch (error) {
+      console.error('Error deleting route:', error);
+    }
   };
 
   // --- New Passenger Type ---
@@ -105,13 +206,31 @@ const AdminPanel = () => {
     setNewPassengerFare('');
   };
 
-  const saveNewPassengerType = () => {
+  const saveNewPassengerType = async () => {
     if (newPassengerType.trim() === '') return;
-    setPassengerTypes([...passengerTypes, newPassengerType]);
-    setFareRates({ ...fareRates, [newPassengerType]: newPassengerFare || '0' });
-    setNewPassengerModalVisible(false);
-    setNewPassengerType('');
-    setNewPassengerFare('');
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/passenger-types`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          passenger_type: newPassengerType,
+          passenger_rate: parseFloat(newPassengerFare) || 0,
+        }),
+      });
+      if (response.ok) {
+        fetchPassengerTypes();
+        cancelNewPassengerModal();
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to add passenger type');
+      }
+    } catch (error) {
+      console.error('Error adding new passenger type:', error);
+    }
   };
 
   const cancelNewPassengerModal = () => {
@@ -123,19 +242,44 @@ const AdminPanel = () => {
   // --- New Route ---
   const openNewRouteModal = () => {
     setNewRouteModalVisible(true);
-    setNewRoute('');
+    setNewRouteFrom('');
+    setNewRouteTo('');
+    setNewRouteRate('');
   };
 
-  const saveNewRoute = () => {
-    if (newRoute.trim() === '') return;
-    setRoutes([...routes, newRoute]);
-    setNewRouteModalVisible(false);
-    setNewRoute('');
+  const saveNewRoute = async () => {
+    if (newRouteFrom.trim() === '' || newRouteTo.trim() === '') return;
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/routes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          origin: newRouteFrom,
+          destination: newRouteTo,
+          added_rate: parseFloat(newRouteRate) || 0,
+        }),
+      });
+      if (response.ok) {
+        fetchRoutes();
+        cancelNewRouteModal();
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to add route');
+      }
+    } catch (error) {
+      console.error('Error adding new route:', error);
+    }
   };
 
   const cancelNewRouteModal = () => {
     setNewRouteModalVisible(false);
-    setNewRoute('');
+    setNewRouteFrom('');
+    setNewRouteTo('');
+    setNewRouteRate('');
   };
 
   return (
@@ -147,27 +291,33 @@ const AdminPanel = () => {
           <Text style={globalStyles.sectionAddIcon}>+</Text>
         </TouchableOpacity>
       </View>
-      {passengerTypes.map(type => (
-        <View key={type} style={globalStyles.listItem}>
+      {passengerTypes.map(passenger => (
+        <View key={passenger.id} style={globalStyles.listItem}>
           <View style={styles.leftContainer}>
             <View style={styles.rateContainer}>
               <Text style={styles.rateText}>
-                PHP {parseFloat(fareRates[type] || '0').toFixed(2)}
+                PHP {parseFloat(passenger.passenger_rate).toFixed(2)}
               </Text>
             </View>
-            <Text style={[globalStyles.listItemPrimary, { marginLeft: 10 }]}>{type}</Text>
+            <Text
+              style={[globalStyles.listItemPrimary, { marginLeft: 10, flexShrink: 1 }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {passenger.passenger_type}
+            </Text>
           </View>
-          <TouchableOpacity style={globalStyles.blueListButton} onPress={() => openPassengerEditModal(type)}>
+          <TouchableOpacity style={globalStyles.blueListButton} onPress={() => openPassengerEditModal(passenger)}>
             <Text style={globalStyles.listButtonText}>Edit</Text>
           </TouchableOpacity>
         </View>
       ))}
 
       {/* Modal for editing Passenger Type */}
-      <Modal visible={editingPassengerType !== null} animationType="none" transparent={true}>
+      <Modal visible={editingPassenger !== null} animationType="none" transparent={true}>
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalContainer}>
-              <Text style={globalStyles.modalTitle}>Edit Passenger Type</Text>
+            <Text style={globalStyles.modalTitle}>Edit Passenger Type</Text>
             <TextInput
               style={globalStyles.input}
               value={tempPassengerType}
@@ -206,24 +356,62 @@ const AdminPanel = () => {
         </TouchableOpacity>
       </View>
       {routes.map((route, index) => (
-        <View key={index} style={globalStyles.listItem}>
-          <Text style={globalStyles.listItemPrimary}>{route}</Text>
-          <TouchableOpacity style={globalStyles.blueListButton} onPress={() => openRouteEditModal(route)}>
+        <View
+          key={route.id}
+          style={[globalStyles.listItem, { flexDirection: 'row', alignItems: 'center' }]}
+        >
+          <View style={[styles.leftContainer, { flex: 1, flexDirection: 'row', alignItems: 'center' }]}>
+            <View style={styles.rateContainer}>
+              <Text style={styles.rateText}>
+                + PHP {parseFloat(route.added_rate).toFixed(2)}
+              </Text>
+            </View>
+            <View style={[styles.locationContainer, { flex: 1, marginLeft: 10 }]}>
+              <Text
+                style={globalStyles.listItemPrimary}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                O: {route.origin}
+              </Text>
+              <Text
+                style={globalStyles.listItemPrimary}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                D: {route.destination}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity style={globalStyles.blueListButton} onPress={() => openRouteEditModal(index)}>
             <Text style={globalStyles.listButtonText}>Edit</Text>
           </TouchableOpacity>
         </View>
       ))}
 
       {/* Modal for editing Route */}
-      <Modal visible={editingRoute !== null} animationType="none" transparent={true}>
+      <Modal visible={editingRouteIndex !== null} animationType="none" transparent={true}>
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Edit Route</Text>
             <TextInput
               style={globalStyles.input}
-              value={tempRoute}
-              onChangeText={setTempRoute}
-              placeholder="Route"
+              value={tempRouteFrom}
+              onChangeText={setTempRouteFrom}
+              placeholder="Origin"
+            />
+            <TextInput
+              style={globalStyles.input}
+              value={tempRouteTo}
+              onChangeText={setTempRouteTo}
+              placeholder="Destination"
+            />
+            <TextInput
+              style={globalStyles.input}
+              value={tempRouteRate}
+              onChangeText={setTempRouteRate}
+              placeholder="Added Rate"
+              keyboardType="numeric"
             />
             <View style={globalStyles.modalButtons}>
               <TouchableOpacity style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]} onPress={cancelRouteEdit}>
@@ -233,7 +421,6 @@ const AdminPanel = () => {
                 <Text style={globalStyles.actionButtonText}>Save</Text>
               </TouchableOpacity>
             </View>
-
             <TouchableOpacity onPress={deleteRouteEdit}>
               <Text style={globalStyles.modalDeleteTextLink}>Delete</Text>
             </TouchableOpacity>
@@ -241,7 +428,7 @@ const AdminPanel = () => {
         </View>
       </Modal>
 
-      {/* Modal for adding a new passenger type */}
+      {/* Modal for adding a new Passenger Type */}
       <Modal visible={newPassengerModalVisible} animationType="none" transparent={true}>
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalContainer}>
@@ -271,16 +458,29 @@ const AdminPanel = () => {
         </View>
       </Modal>
 
-      {/* Modal for adding a new route */}
+      {/* Modal for adding a new Route */}
       <Modal visible={newRouteModalVisible} animationType="none" transparent={true}>
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Add Route</Text>
             <TextInput
               style={globalStyles.input}
-              placeholder="Route"
-              value={newRoute}
-              onChangeText={setNewRoute}
+              placeholder="Origin"
+              value={newRouteFrom}
+              onChangeText={setNewRouteFrom}
+            />
+            <TextInput
+              style={globalStyles.input}
+              placeholder="Destination"
+              value={newRouteTo}
+              onChangeText={setNewRouteTo}
+            />
+            <TextInput
+              style={globalStyles.input}
+              placeholder="Added Rate"
+              value={newRouteRate}
+              onChangeText={setNewRouteRate}
+              keyboardType="numeric"
             />
             <View style={globalStyles.modalButtons}>
               <TouchableOpacity style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]} onPress={cancelNewRouteModal}>
@@ -314,6 +514,10 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 16,
     textAlign: 'center',
+  },
+  locationContainer: {
+    flexDirection: 'column',
+    justifyContent: 'center',
   },
 });
 
