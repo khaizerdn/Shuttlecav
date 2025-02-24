@@ -225,6 +225,7 @@ const Inspect = () => {
                     plate: item.shuttlePlatNumber,
                     origin: item.origin,
                     destination: item.destination,
+                    added_rate: item.added_rate,
                   },
                 })
               }
@@ -236,11 +237,14 @@ const Inspect = () => {
                     { flex: 1, flexDirection: 'row', alignItems: 'center' },
                   ]}
                 >
+
                   <View style={globalStyles.listLeftBox}>
-                    <Text style={globalStyles.listLeftBoxText}>
-                      + PHP {parseFloat(item.added_rate).toFixed(2)}
+                    <Text style={globalStyles.listLeftBoxSecondaryText}>PHP</Text>
+                    <Text style={globalStyles.listLeftBoxPrimaryText}>
+                      {parseFloat(item.added_rate).toFixed(2)}
                     </Text>
                   </View>
+
                   <View
                     style={[
                       globalStyles.listlocationContainer,

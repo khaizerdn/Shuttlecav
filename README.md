@@ -8,6 +8,5 @@ CANT CONNECT MOBILE
 Use wifi not LAN
 
 Note:
-1. Admin should have the ability to change the fare rates for a specific type of commuter.
-2. On start-inspection.jsx, it should show the ID next to the commuter type. On the right side is the amount they are paying.
+1. On start-inspection.jsx at the right side of the "Recent Logs:" there should have a button when clicked it will show the details the passenger rate and route rate.
 3. Make the token expires at 7 days and make the user log in when the token is still not expired.

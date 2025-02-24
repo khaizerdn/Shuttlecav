@@ -1,4 +1,3 @@
-// admin-panel.jsx
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, ScrollView, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -294,9 +293,11 @@ const AdminPanel = () => {
       {passengerTypes.map(passenger => (
         <View key={passenger.id} style={globalStyles.listItem}>
           <View style={globalStyles.listItemLeftRow}>
+            {/* Updated Passenger Rate Container */}
             <View style={globalStyles.listLeftBox}>
-              <Text style={globalStyles.listLeftBoxText}>
-                PHP {parseFloat(passenger.passenger_rate).toFixed(2)}
+              <Text style={globalStyles.listLeftBoxSecondaryText}>PHP</Text>
+              <Text style={globalStyles.listLeftBoxPrimaryText}>
+                {parseFloat(passenger.passenger_rate).toFixed(2)}
               </Text>
             </View>
             <Text
@@ -361,11 +362,14 @@ const AdminPanel = () => {
           style={[globalStyles.listItem, { flexDirection: 'row', alignItems: 'center' }]}
         >
           <View style={[globalStyles.listItemLeftRow, { flex: 1, flexDirection: 'row', alignItems: 'center' }]}>
+
             <View style={globalStyles.listLeftBox}>
-              <Text style={globalStyles.listLeftBoxText}>
-                + PHP {parseFloat(route.added_rate).toFixed(2)}
+              <Text style={globalStyles.listLeftBoxSecondaryText}>PHP</Text>
+              <Text style={globalStyles.listLeftBoxPrimaryText}>
+                {parseFloat(route.added_rate).toFixed(2)}
               </Text>
             </View>
+            
             <View style={[globalStyles.listlocationContainer, { flex: 1, marginLeft: 10 }]}>
               <Text
                 style={globalStyles.listItemPrimary}

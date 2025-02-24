@@ -8,8 +8,8 @@ import NfcDisabledModal from './NfcDisabledModal';
 import { config } from './config';
 
 export default function StartInspection() {
-  // Extract origin and destination (instead of route)
-  const { driver, plate, origin, destination } = useLocalSearchParams();
+  // Extract driver, plate, origin, destination, and added_rate from params.
+  const { driver, plate, origin, destination, added_rate } = useLocalSearchParams();
   const { scanning, tagData, startScanning, endScanning, checkNfcEnabled, enableNFC } = useNFC();
 
   const [scannedLogs, setScannedLogs] = useState([]);
@@ -96,6 +96,17 @@ export default function StartInspection() {
     setShowNfcDisabledModal(false);
   };
 
+  // Define the route's added rate as a number.
+  const routeAddedRate = added_rate ? parseFloat(added_rate) : 0;
+
+  // For total money, sum for each scanned log:
+  // Look up the passenger rate for that log’s passenger type and add routeAddedRate.
+  const totalMoney = scannedLogs.reduce((acc, log) => {
+    const typeInfo = dbPassengerTypes.find(item => item.passenger_type === log.passengerType);
+    const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
+    return acc + (passengerRate + routeAddedRate);
+  }, 0);
+
   // Compute counts for each passenger type from scannedLogs
   const passengerCounts = scannedLogs.reduce((acc, log) => {
     const type = log.passengerType;
@@ -113,42 +124,60 @@ export default function StartInspection() {
     setScannedLogs((prevLogs) => prevLogs.filter((log) => log.id !== id));
   };
 
-  const renderLogItem = ({ item }) => (
-    <View style={globalStyles.listItem}>
-      <View style={globalStyles.listItemLeft}>
-        <Text style={globalStyles.listItemDate}>{item.timestamp}</Text>
-        <Text style={globalStyles.listItemPrimary}>
-          {item.passengerType}{' '}
-          <Text style={globalStyles.listItemSecondary}>
-            {item.tagId ? `${item.tagId}` : ''}
-          </Text>
-        </Text>
-      </View>
-      <View style={globalStyles.listItemRight}>
-        <TouchableOpacity
-          style={globalStyles.redListButton}
-          onPress={() => handleDeleteLog(item.id)}
-        >
-          <Text style={globalStyles.listButtonText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  // Render each scanned log. Here we add a left box (using listLeftBox style)
+  // that displays the fare for that log (passenger_rate + routeAddedRate).
+  const renderLogItem = ({ item }) => {
+    const typeInfo = dbPassengerTypes.find(it => it.passenger_type === item.passengerType);
+    const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
+    const fare = passengerRate + routeAddedRate;
 
-  // Compute total money collected (assuming PHP 10 per passenger)
-  const totalMoney = scannedLogs.length * 10;
+    return (
+      <View style={globalStyles.listItem}>
+        {/* Left box for fare */}
+
+        <View style={[globalStyles.listLeftBox, { marginRight: 10 }]}>
+          <Text style={globalStyles.listLeftBoxSecondaryText}>PHP</Text>
+          <Text style={globalStyles.listLeftBoxPrimaryText}>
+          {fare.toFixed(2)}
+          </Text>
+        </View>
+
+        {/* Main content */}
+        <View style={globalStyles.listItemLeft}>
+          <Text style={globalStyles.listItemDate}>{item.timestamp}</Text>
+          <Text style={globalStyles.listItemPrimary}>
+            {item.passengerType}{' '}
+            <Text style={globalStyles.listItemSecondary}>
+              {item.tagId ? `${item.tagId}` : ''}
+            </Text>
+          </Text>
+        </View>
+        <View style={globalStyles.listItemRight}>
+          <TouchableOpacity
+            style={globalStyles.redListButton}
+            onPress={() => handleDeleteLog(item.id)}
+          >
+            <Text style={globalStyles.listButtonText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <View style={[globalStyles.container, { padding: 20, backgroundColor: '#FFF' }]}>
-      {/* Shuttle Info Header */}
+      {/* Shuttle Info Header (unchanged) */}
       <View style={globalStyles.listItem}>
         <View style={[globalStyles.listItemLeftRow, { flex: 1, flexDirection: 'row', alignItems: 'center' }]}>
-          {/* Left box displaying a default rate */}
+          {/* Left box showing only the route added rate */}
+
           <View style={globalStyles.listLeftBox}>
-            <Text style={globalStyles.listLeftBoxText}>
-              + PHP 0.00
+            <Text style={globalStyles.listLeftBoxSecondaryText}>PHP</Text>
+            <Text style={globalStyles.listLeftBoxPrimaryText}>
+              {added_rate ? parseFloat(added_rate).toFixed(2) : '0.00'}
             </Text>
           </View>
+
           {/* Shuttle details */}
           <View style={[globalStyles.listlocationContainer, { flex: 1, marginLeft: 10 }]}>
             <Text style={globalStyles.listItemDate}>
@@ -187,7 +216,7 @@ export default function StartInspection() {
       </View>
       <View style={globalStyles.separator} />
 
-      {/* Summary Container: Total Passengers (clickable), Plus Button, Total Money */}
+      {/* Summary Container: Total Passengers, Plus Button, Total Money */}
       <View style={styles.summaryContainer}>
         <TouchableOpacity
           style={styles.summaryItem}
@@ -355,4 +384,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

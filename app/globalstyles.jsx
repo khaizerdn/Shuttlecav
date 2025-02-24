@@ -104,12 +104,20 @@ const globalStyles = StyleSheet.create({
     alignItems: 'center',
   },
   listLeftBox: {
+    width: 60,
+    height: 60,
     backgroundColor: '#D3D3D3',
     borderRadius: 5,
-    padding: 10,
-    width: 100,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  listLeftBoxSecondaryText: {
+    fontSize: 12,
+    color: '#000',
+  },
+  listLeftBoxPrimaryText: {
+    fontSize: 16,
+    color: '#000',
   },
   listLeftBoxText: {
     color: '#000',
