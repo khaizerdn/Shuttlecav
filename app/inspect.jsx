@@ -1,6 +1,15 @@
-// Inspect.jsx
-import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, Modal, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  Alert,
+  Modal,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import globalStyles from './globalstyles';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -19,9 +28,36 @@ const Inspect = () => {
   const [newFirstName, setNewFirstName] = useState('');
   const [newLastName, setNewLastName] = useState('');
   const [newPlate, setNewPlate] = useState('');
-  const [newRouteFrom, setNewRouteFrom] = useState('Carmona Estates');
-  const [newRouteTo, setNewRouteTo] = useState('Waltermart');
 
+  // Routes state for selection
+  const [routes, setRoutes] = useState([]);
+  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [showRouteModal, setShowRouteModal] = useState(false);
+
+  // Fetch routes for the selection list
+  const fetchRoutes = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/routes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRoutes(data);
+        // Removed default route selection to force manual selection
+        // if (data.length > 0 && !selectedRoute) {
+        //   setSelectedRoute(data[0].id);
+        // }
+      } else {
+        const errorData = await response.json();
+        Alert.alert('Error', errorData.message || 'Failed to fetch routes');
+      }
+    } catch (error) {
+      console.error('Error fetching routes:', error);
+    }
+  };
+
+  // Fetch shuttles
   const fetchShuttles = async () => {
     const token = await AsyncStorage.getItem('userToken');
     try {
@@ -30,7 +66,7 @@ const Inspect = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        // Sort the shuttles in descending order by id (assuming numeric timestamp)
+        // Sort shuttles in descending order by id (assuming numeric timestamp)
         const sortedData = data.sort((a, b) => parseInt(b.id) - parseInt(a.id));
         setShuttleList(sortedData);
       } else {
@@ -47,6 +83,17 @@ const Inspect = () => {
       fetchShuttles();
     }, [])
   );
+
+  useEffect(() => {
+    fetchRoutes();
+  }, []);
+
+  // Reset selected route whenever the Add Shuttle modal opens
+  useEffect(() => {
+    if (addShuttleModalVisible) {
+      setSelectedRoute(null);
+    }
+  }, [addShuttleModalVisible]);
 
   // Delete shuttle API call
   const handleDelete = async (id) => {
@@ -88,25 +135,25 @@ const Inspect = () => {
     setDeleteModalVisible(false);
   };
 
-  // Swap route values
-  const swapRoute = () => {
-    setNewRouteFrom(newRouteTo);
-    setNewRouteTo(newRouteFrom);
+  // Helper: Get route object by id
+  const getSelectedRouteObj = () => {
+    return routes.find((r) => r.id === selectedRoute);
   };
 
   // Add Shuttle API call (via modal)
+  // Now, instead of sending the full route details,
+  // we only send route_id.
   const addShuttle = async () => {
     if (
       newFirstName.trim() &&
       newLastName.trim() &&
       newPlate.trim() &&
-      newRouteFrom.trim() &&
-      newRouteTo.trim()
+      selectedRoute
     ) {
       const newShuttleObj = {
         shuttleDriver: `${newFirstName.trim()} ${newLastName.trim()}`,
         shuttlePlatNumber: newPlate.trim(),
-        route: `${newRouteFrom.trim()} to ${newRouteTo.trim()}`,
+        route_id: selectedRoute,
       };
 
       try {
@@ -127,9 +174,7 @@ const Inspect = () => {
           setNewFirstName('');
           setNewLastName('');
           setNewPlate('');
-          setNewRouteFrom('Carmona Estates');
-          setNewRouteTo('Waltermart');
-          // Refresh shuttle list (new shuttle will appear at top due to sorting)
+          setSelectedRoute(null);
           fetchShuttles();
         } else {
           const errorData = await response.json();
@@ -149,7 +194,16 @@ const Inspect = () => {
       {/* Header Row */}
       <View style={globalStyles.sectionTitleContainer}>
         <Text style={globalStyles.sectionTitle}>Select shuttle</Text>
-        <TouchableOpacity onPress={() => setAddShuttleModalVisible(true)}>
+        <TouchableOpacity
+          onPress={() => {
+            // Reset fields and selected route every time the modal is opened
+            setNewFirstName('');
+            setNewLastName('');
+            setNewPlate('');
+            setSelectedRoute(null);
+            setAddShuttleModalVisible(true);
+          }}
+        >
           <Text style={globalStyles.sectionAddIcon}>+</Text>
         </TouchableOpacity>
       </View>
@@ -169,17 +223,40 @@ const Inspect = () => {
                   params: {
                     driver: item.shuttleDriver,
                     plate: item.shuttlePlatNumber,
-                    route: item.route,
+                    origin: item.origin,
+                    destination: item.destination,
                   },
                 })
               }
             >
               <View style={globalStyles.listItem}>
-                <View style={globalStyles.listItemLeft}>
-                  <Text style={globalStyles.listItemDate}>{item.route}</Text>
-                  <Text style={globalStyles.listItemPrimary}>
-                    {item.shuttleDriver} - {item.shuttlePlatNumber}
-                  </Text>
+                <View
+                  style={[
+                    globalStyles.listItemLeftRow,
+                    { flex: 1, flexDirection: 'row', alignItems: 'center' },
+                  ]}
+                >
+                  <View style={globalStyles.listLeftBox}>
+                    <Text style={globalStyles.listLeftBoxText}>
+                      + PHP {parseFloat(item.added_rate).toFixed(2)}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      globalStyles.listlocationContainer,
+                      { flex: 1, marginLeft: 10 },
+                    ]}
+                  >
+                    <Text style={globalStyles.listItemDate}>
+                      {item.origin} to {item.destination}
+                    </Text>
+                    <Text style={globalStyles.listItemPrimary}>
+                      {item.shuttleDriver}
+                    </Text>
+                    <Text style={globalStyles.listItemPrimary}>
+                      {item.shuttlePlatNumber}
+                    </Text>
+                  </View>
                 </View>
                 <TouchableOpacity
                   style={globalStyles.redListButton}
@@ -193,51 +270,61 @@ const Inspect = () => {
         />
       </View>
 
-      {/* Delete Confirmation Modal (Scrollable) */}
+      {/* Delete Confirmation Modal */}
       <Modal visible={deleteModalVisible} animationType="none" transparent={true}>
-          <View style={globalStyles.modalOverlay}>
-            <View style={globalStyles.modalContainer}>
-              <Text style={globalStyles.modalTitle}>Confirm Deletion</Text>
-              {shuttleToDelete && (
-                <>
-                  <Text style={globalStyles.modalText}>
-                    Are you sure you want to delete the shuttle?
-                  </Text>
-                  <View style={globalStyles.listItem}>
-                    <View style={globalStyles.listItemLeft}>
-                      <Text style={globalStyles.listItemDate}>{shuttleToDelete.route}</Text>
-                      <Text style={globalStyles.listItemPrimary}>
-                        {shuttleToDelete.shuttleDriver} - {shuttleToDelete.shuttlePlatNumber}
-                      </Text>
-                    </View>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalContainer}>
+            <Text style={globalStyles.modalTitle}>Confirm Deletion</Text>
+            {shuttleToDelete && (
+              <>
+                <Text style={globalStyles.modalText}>
+                  Are you sure you want to delete the shuttle?
+                </Text>
+                <View style={globalStyles.listItem}>
+                  <View style={globalStyles.listItemLeft}>
+                    <Text style={globalStyles.listItemDate}>
+                      From: {shuttleToDelete.origin} | To: {shuttleToDelete.destination}
+                    </Text>
+                    <Text style={globalStyles.listItemPrimary}>
+                      {shuttleToDelete.shuttleDriver} - {shuttleToDelete.shuttlePlatNumber}
+                    </Text>
                   </View>
-                </>
-              )}
-              <View style={globalStyles.modalButtons}>
-                <TouchableOpacity
-                  style={[globalStyles.actionButton, styles.modalButton, { backgroundColor: '#e74c3c' }]}
-                  onPress={cancelDelete}
-                >
-                  <Text style={globalStyles.actionButtonText}>No</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[globalStyles.actionButton, styles.modalButton, { backgroundColor: '#3578E5' }]}
-                  onPress={handleConfirmDelete}
-                >
-                  <Text style={globalStyles.actionButtonText}>Yes</Text>
-                </TouchableOpacity>
-              </View>
+                </View>
+              </>
+            )}
+            <View style={globalStyles.modalButtons}>
+              <TouchableOpacity
+                style={[
+                  globalStyles.actionButton,
+                  { backgroundColor: '#e74c3c' },
+                ]}
+                onPress={cancelDelete}
+              >
+                <Text style={globalStyles.actionButtonText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  globalStyles.actionButton,
+                  { backgroundColor: '#3578E5' },
+                ]}
+                onPress={handleConfirmDelete}
+              >
+                <Text style={globalStyles.actionButtonText}>Yes</Text>
+              </TouchableOpacity>
             </View>
           </View>
+        </View>
       </Modal>
 
-      {/* Add Shuttle Modal (Scrollable) */}
+      {/* Add Shuttle Modal */}
       <Modal visible={addShuttleModalVisible} animationType="none" transparent={true}>
         <ScrollView>
           <View style={globalStyles.modalOverlay}>
             <View style={globalStyles.modalContainer}>
               <Text style={globalStyles.modalTitle}>Add Shuttle</Text>
-              <Text style={globalStyles.modalText}>Driver and Shuttle Information</Text>
+              <Text style={globalStyles.modalText}>
+                Driver and Shuttle Information
+              </Text>
               <TextInput
                 style={globalStyles.input}
                 placeholder="Driver's First Name"
@@ -258,38 +345,80 @@ const Inspect = () => {
               />
               <View style={globalStyles.separator} />
               <Text style={globalStyles.modalText}>Route</Text>
-              <View style={styles.routeContainer}>
-                <View style={styles.routeInputContainer}>
-                  <Text style={styles.routeLabel}>From</Text>
-                  <TextInput
-                    style={[globalStyles.input]}
-                    placeholder="From"
-                    value={newRouteFrom}
-                    onChangeText={setNewRouteFrom}
-                  />
+              {/* Display Selected Route or a button to select one */}
+              {selectedRoute && getSelectedRouteObj() ? (
+                <View
+                  style={[
+                    globalStyles.listItem,
+                    { flexDirection: 'row', alignItems: 'center' },
+                  ]}
+                >
+                  <View
+                    style={[
+                      globalStyles.listItemLeftRow,
+                      { flex: 1, flexDirection: 'row', alignItems: 'center' },
+                    ]}
+                  >
+                    <View style={globalStyles.listLeftBox}>
+                      <Text style={globalStyles.listLeftBoxText}>
+                        + PHP {parseFloat(getSelectedRouteObj().added_rate).toFixed(2)}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        globalStyles.listlocationContainer,
+                        { flex: 1, marginLeft: 10 },
+                      ]}
+                    >
+                      <Text
+                        style={globalStyles.listItemPrimary}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        From: {getSelectedRouteObj().origin}
+                      </Text>
+                      <Text
+                        style={globalStyles.listItemPrimary}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        To: {getSelectedRouteObj().destination}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={globalStyles.blueListButton}
+                    onPress={() => setShowRouteModal(true)}
+                  >
+                    <Text style={globalStyles.listButtonText}>Edit</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity onPress={swapRoute} style={styles.swapButton}>
-                  <Text style={styles.swapButtonText}>⇄</Text>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    globalStyles.button,
+                    { alignSelf: 'center', marginVertical: 10 },
+                  ]}
+                  onPress={() => setShowRouteModal(true)}
+                >
+                  <Text style={globalStyles.buttonText}>Select Route</Text>
                 </TouchableOpacity>
-                <View style={styles.routeInputContainer}>
-                  <Text style={styles.routeLabel}>To</Text>
-                  <TextInput
-                    style={[globalStyles.input]}
-                    placeholder="To"
-                    value={newRouteTo}
-                    onChangeText={setNewRouteTo}
-                  />
-                </View>
-              </View>
+              )}
               <View style={globalStyles.modalButtons}>
                 <TouchableOpacity
-                  style={[globalStyles.actionButton, styles.modalButton, { backgroundColor: '#e74c3c' }]}
+                  style={[
+                    globalStyles.actionButton,
+                    { backgroundColor: '#e74c3c' },
+                  ]}
                   onPress={() => setAddShuttleModalVisible(false)}
                 >
                   <Text style={globalStyles.actionButtonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[globalStyles.actionButton, styles.modalButton, { backgroundColor: '#3578E5' }]}
+                  style={[
+                    globalStyles.actionButton,
+                    { backgroundColor: '#3578E5' },
+                  ]}
                   onPress={addShuttle}
                 >
                   <Text style={globalStyles.actionButtonText}>Add</Text>
@@ -299,41 +428,74 @@ const Inspect = () => {
           </View>
         </ScrollView>
       </Modal>
+
+      {/* Route Selection Modal */}
+      <Modal visible={showRouteModal} animationType="fade" transparent={false}>
+        <ScrollView>
+          <View style={globalStyles.modalOverlay}>
+            <View style={globalStyles.modalContainer}>
+              <Text style={globalStyles.modalTitle}>Select Route</Text>
+              {routes.map((route) => (
+                <TouchableOpacity
+                  key={route.id}
+                  style={[
+                    globalStyles.listItem,
+                    { flexDirection: 'row', alignItems: 'center' },
+                  ]}
+                  onPress={() => {
+                    setSelectedRoute(route.id);
+                    setShowRouteModal(false);
+                  }}
+                >
+                  <View
+                    style={[
+                      globalStyles.listItemLeftRow,
+                      { flex: 1, flexDirection: 'row', alignItems: 'center' },
+                    ]}
+                  >
+                    <View style={globalStyles.listLeftBox}>
+                      <Text style={globalStyles.listLeftBoxText}>
+                        + PHP {parseFloat(route.added_rate).toFixed(2)}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        globalStyles.listlocationContainer,
+                        { flex: 1, marginLeft: 10 },
+                      ]}
+                    >
+                      <Text
+                        style={globalStyles.listItemPrimary}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        From: {route.origin}
+                      </Text>
+                      <Text
+                        style={globalStyles.listItemPrimary}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        To: {route.destination}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  routeContainer: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    width: '100%',
-  },
-  routeInputContainer: {
-    width: '100%',
-    marginBottom: 10,
-  },
-  routeLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 5,
-  },
-  swapButton: {
-    backgroundColor: '#3578E5',
-    padding: 10,
-    borderRadius: 5,
+  dropdownPlaceholder: {
+    fontSize: 16,
+    color: '#777',
     marginVertical: 10,
-    width: 60,
-    alignItems: 'center',
-  },
-  swapButtonText: {
-    fontSize: 20,
-    color: '#fff',
-  },
-  modalButton: {
-    flex: 1,
-    marginHorizontal: 5,
-    height: 50,
+    textAlign: 'center',
   },
 });
 

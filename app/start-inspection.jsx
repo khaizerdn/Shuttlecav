@@ -1,13 +1,15 @@
-// StartInspection.jsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import globalStyles from './globalstyles';
 import useNFC from './UseNFC';
 import NfcDisabledModal from './NfcDisabledModal';
+import { config } from './config';
 
 export default function StartInspection() {
-  const { driver, plate, route } = useLocalSearchParams();
+  // Extract origin and destination (instead of route)
+  const { driver, plate, origin, destination } = useLocalSearchParams();
   const { scanning, tagData, startScanning, endScanning, checkNfcEnabled, enableNFC } = useNFC();
 
   const [scannedLogs, setScannedLogs] = useState([]);
@@ -15,8 +17,31 @@ export default function StartInspection() {
   const [showNfcDisabledModal, setShowNfcDisabledModal] = useState(false);
   const [showCountsModal, setShowCountsModal] = useState(false);
 
-  // Always show these passenger types
-  const passengerTypes = ['PWD', 'Senior', 'Student', 'Regular'];
+  // New state for passenger types from the DB
+  const [dbPassengerTypes, setDbPassengerTypes] = useState([]);
+
+  useEffect(() => {
+    fetchPassengerTypes();
+  }, []);
+
+  // Fetch passenger types from the backend
+  const fetchPassengerTypes = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/passenger-types`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDbPassengerTypes(data);
+      } else {
+        const error = await response.json();
+        console.error('Error fetching passenger types:', error.message);
+      }
+    } catch (error) {
+      console.error('Error fetching passenger types:', error);
+    }
+  };
 
   useEffect(() => {
     if (tagData && tagData.id && !showPassengerModal) {
@@ -78,6 +103,11 @@ export default function StartInspection() {
     return acc;
   }, {});
 
+  // Compute an array of passenger types that have been scanned
+  const scannedPassengerTypes = dbPassengerTypes.filter(
+    (item) => (passengerCounts[item.passenger_type] || 0) > 0
+  );
+
   // Function to delete a log item directly
   const handleDeleteLog = (id) => {
     setScannedLogs((prevLogs) => prevLogs.filter((log) => log.id !== id));
@@ -105,22 +135,35 @@ export default function StartInspection() {
     </View>
   );
 
-  // Compute total money collected (assuming $10 per passenger)
+  // Compute total money collected (assuming PHP 10 per passenger)
   const totalMoney = scannedLogs.length * 10;
 
   return (
     <View style={[globalStyles.container, { padding: 20, backgroundColor: '#FFF' }]}>
       {/* Shuttle Info Header */}
       <View style={globalStyles.listItem}>
-        <View style={globalStyles.listItemLeft}>
-          <Text style={globalStyles.listItemDate}>{route || 'N/A'}</Text>
-          <Text style={globalStyles.listItemPrimary}>
-            {driver ? driver : 'N/A'} - {plate ? plate : 'N/A'}
-          </Text>
+        <View style={[globalStyles.listItemLeftRow, { flex: 1, flexDirection: 'row', alignItems: 'center' }]}>
+          {/* Left box displaying a default rate */}
+          <View style={globalStyles.listLeftBox}>
+            <Text style={globalStyles.listLeftBoxText}>
+              + PHP 0.00
+            </Text>
+          </View>
+          {/* Shuttle details */}
+          <View style={[globalStyles.listlocationContainer, { flex: 1, marginLeft: 10 }]}>
+            <Text style={globalStyles.listItemDate}>
+              {origin && destination ? `${origin} to ${destination}` : 'N/A'}
+            </Text>
+            <Text style={globalStyles.listItemPrimary}>
+              {driver || 'N/A'}
+            </Text>
+            <Text style={globalStyles.listItemPrimary}>
+              {plate || 'N/A'}
+            </Text>
+          </View>
         </View>
       </View>
 
-      {/* Separator */}
       <View style={globalStyles.separator} />
 
       {/* Recent Logs Title */}
@@ -162,7 +205,7 @@ export default function StartInspection() {
         </TouchableOpacity>
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>Total Money</Text>
-          <Text style={styles.summaryValue}>${totalMoney}</Text>
+          <Text style={styles.summaryValue}>PHP {totalMoney.toFixed(2)}</Text>
         </View>
       </View>
 
@@ -185,11 +228,19 @@ export default function StartInspection() {
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Select Passenger Type</Text>
-            {passengerTypes.map((type) => (
-              <TouchableOpacity key={type} style={globalStyles.button} onPress={() => handlePassengerSelect(type)}>
-                <Text style={globalStyles.buttonText}>{type}</Text>
-              </TouchableOpacity>
-            ))}
+            {dbPassengerTypes.length > 0 ? (
+              dbPassengerTypes.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={globalStyles.button}
+                  onPress={() => handlePassengerSelect(item.passenger_type)}
+                >
+                  <Text style={globalStyles.buttonText}>{item.passenger_type}</Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.logsPlaceholder}>No passenger types available.</Text>
+            )}
             <TouchableOpacity style={globalStyles.cancelButton} onPress={handleCancel}>
               <Text style={globalStyles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
@@ -202,16 +253,24 @@ export default function StartInspection() {
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Number of Passengers</Text>
-            {passengerTypes.map((type) => (
-              <View key={type} style={globalStyles.listItem}>
-                <View style={styles.leftContainer}>
-                  <View style={styles.countContainer}>
-                    <Text style={styles.countText}>{passengerCounts[type] || 0}</Text>
+            {scannedPassengerTypes.length > 0 ? (
+              scannedPassengerTypes.map((item) => (
+                <View key={item.id} style={globalStyles.listItem}>
+                  <View style={styles.leftContainer}>
+                    <View style={styles.countContainer}>
+                      <Text style={styles.countText}>
+                        {passengerCounts[item.passenger_type]}
+                      </Text>
+                    </View>
+                    <Text style={[globalStyles.listItemPrimary, { marginLeft: 10 }]}>
+                      {item.passenger_type}
+                    </Text>
                   </View>
-                  <Text style={[globalStyles.listItemPrimary, { marginLeft: 10 }]}>{type}</Text>
                 </View>
-              </View>
-            ))}
+              ))
+            ) : (
+              <Text style={styles.logsPlaceholder}>No passengers scanned.</Text>
+            )}
             <View style={globalStyles.modalButtons}>
               <TouchableOpacity style={globalStyles.button} onPress={() => setShowCountsModal(false)}>
                 <Text style={globalStyles.buttonText}>Go back</Text>
@@ -296,3 +355,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+

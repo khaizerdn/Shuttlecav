@@ -236,18 +236,18 @@ const authenticateToken = (req, res, next) => {
 
 // Add a new shuttle (POST /shuttles)
 app.post('/shuttles', authenticateToken, (req, res) => {
-  const { shuttleDriver, shuttlePlatNumber, route } = req.body;
+  const { shuttleDriver, shuttlePlatNumber, route_id } = req.body;
   const username = req.user.username;
-  if (!shuttleDriver || !shuttlePlatNumber || !route) {
+  if (!shuttleDriver || !shuttlePlatNumber || !route_id) {
     return res.status(400).json({ message: 'Missing shuttle information' });
   }
-  // Generate a unique ID (you can adjust the logic as needed)
+  // Generate a unique ID (adjust logic as needed)
   const id = Date.now().toString();
   const query = `
-    INSERT INTO created_shuttle (id, username, shuttleDriver, shuttlePlatNumber, route)
+    INSERT INTO created_shuttle (id, username, shuttleDriver, shuttlePlatNumber, route_id)
     VALUES (?, ?, ?, ?, ?)
   `;
-  db.query(query, [id, username, shuttleDriver, shuttlePlatNumber, route], (err, result) => {
+  db.query(query, [id, username, shuttleDriver, shuttlePlatNumber, route_id], (err, result) => {
     if (err) {
       console.error('Error inserting shuttle:', err);
       return res.status(500).json({ message: 'Error adding shuttle' });
@@ -259,7 +259,13 @@ app.post('/shuttles', authenticateToken, (req, res) => {
 // Get shuttles for the logged‑in user (GET /shuttles)
 app.get('/shuttles', authenticateToken, (req, res) => {
   const username = req.user.username;
-  const query = 'SELECT * FROM created_shuttle WHERE username = ?';
+  // Join with the routes table to get the latest route information
+  const query = `
+    SELECT cs.*, r.origin, r.destination, r.added_rate
+    FROM created_shuttle cs
+    JOIN routes r ON cs.route_id = r.id
+    WHERE cs.username = ?
+  `;
   db.query(query, [username], (err, results) => {
     if (err) {
       console.error('Error fetching shuttles:', err);

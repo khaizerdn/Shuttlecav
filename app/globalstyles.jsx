@@ -99,6 +99,23 @@ const globalStyles = StyleSheet.create({
   listItemLeft: {
     flex: 1,
   },
+  listItemLeftRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  listLeftBox: {
+    backgroundColor: '#D3D3D3',
+    borderRadius: 5,
+    padding: 10,
+    width: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listLeftBoxText: {
+    color: '#000',
+    fontSize: 16,
+    textAlign: 'center',
+  },
   listItemRight: {
     alignItems: 'flex-end',
     justifyContent: 'center',
@@ -110,6 +127,10 @@ const globalStyles = StyleSheet.create({
   listItemPrimary: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  listlocationContainer: {
+    flexDirection: 'column',
+    justifyContent: 'center',
   },
   listItemSecondary: {
     fontSize: 16,
@@ -139,7 +160,7 @@ const globalStyles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    width: '80%',
+    width: '100%',
     backgroundColor: '#FFF',
     borderRadius: 10,
     padding: 20,

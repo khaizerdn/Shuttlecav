@@ -293,9 +293,9 @@ const AdminPanel = () => {
       </View>
       {passengerTypes.map(passenger => (
         <View key={passenger.id} style={globalStyles.listItem}>
-          <View style={styles.leftContainer}>
-            <View style={styles.rateContainer}>
-              <Text style={styles.rateText}>
+          <View style={globalStyles.listItemLeftRow}>
+            <View style={globalStyles.listLeftBox}>
+              <Text style={globalStyles.listLeftBoxText}>
                 PHP {parseFloat(passenger.passenger_rate).toFixed(2)}
               </Text>
             </View>
@@ -360,26 +360,26 @@ const AdminPanel = () => {
           key={route.id}
           style={[globalStyles.listItem, { flexDirection: 'row', alignItems: 'center' }]}
         >
-          <View style={[styles.leftContainer, { flex: 1, flexDirection: 'row', alignItems: 'center' }]}>
-            <View style={styles.rateContainer}>
-              <Text style={styles.rateText}>
+          <View style={[globalStyles.listItemLeftRow, { flex: 1, flexDirection: 'row', alignItems: 'center' }]}>
+            <View style={globalStyles.listLeftBox}>
+              <Text style={globalStyles.listLeftBoxText}>
                 + PHP {parseFloat(route.added_rate).toFixed(2)}
               </Text>
             </View>
-            <View style={[styles.locationContainer, { flex: 1, marginLeft: 10 }]}>
+            <View style={[globalStyles.listlocationContainer, { flex: 1, marginLeft: 10 }]}>
               <Text
                 style={globalStyles.listItemPrimary}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                O: {route.origin}
+                From: {route.origin}
               </Text>
               <Text
                 style={globalStyles.listItemPrimary}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                D: {route.destination}
+                To: {route.destination}
               </Text>
             </View>
           </View>
@@ -496,29 +496,5 @@ const AdminPanel = () => {
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  leftContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rateContainer: {
-    backgroundColor: '#D3D3D3',
-    borderRadius: 5,
-    padding: 10,
-    width: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rateText: {
-    color: '#000',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  locationContainer: {
-    flexDirection: 'column',
-    justifyContent: 'center',
-  },
-});
 
 export default AdminPanel;
