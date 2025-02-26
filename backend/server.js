@@ -478,18 +478,20 @@ app.post('/inspections', authenticateToken, (req, res) => {
           });
         }
         if (logs && logs.length > 0) {
-          // Map logs and include the fare for each log.
+          // Map logs and include fare, origin, and destination in each log.
           const logValues = logs.map(log => [
             log.id,
             inspectionId,
             log.passenger_type,
             log.tag_id,
             log.scanned_datetime,
-            log.fare  // fare should be sent in each log object
+            log.fare,         // fare from log object
+            origin || '',     // origin from route
+            destination || '' // destination from route
           ]);
           const logQuery = `
             INSERT INTO inspection_logs 
-            (id, inspection_id, passenger_type, tag_id, scanned_datetime, fare) 
+            (id, inspection_id, passenger_type, tag_id, scanned_datetime, fare, origin, destination) 
             VALUES ?
           `;
           db.query(logQuery, [logValues], (err, result) => {
@@ -565,6 +567,26 @@ app.post('/inspections', authenticateToken, (req, res) => {
       }
     );
   });
+});
+
+
+// Get Transaction History for the logged-in user
+app.get('/transactions', authenticateToken, (req, res) => {
+  try {
+    const decoded = jwt.verify(req.headers.authorization.split(' ')[1], process.env.JWT_SECRET);
+    const userId = decoded.userId;
+    const query = 'SELECT * FROM inspection_logs WHERE passenger = ? ORDER BY scanned_datetime DESC';
+    db.query(query, [userId], (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ message: 'Error fetching transaction history' });
+      }
+      return res.status(200).json(results);
+    });
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    return res.status(401).json({ message: 'Invalid token' });
+  }
 });
 
 
