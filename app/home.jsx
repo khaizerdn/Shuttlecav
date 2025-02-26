@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Image, FlatList, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import globalStyles from './globalstyles';
 import { config } from './config';
@@ -10,55 +10,101 @@ const { width } = Dimensions.get('window');
 const Home = () => {
   const [firstname, setFirstname] = useState('');
   const [surname, setSurname] = useState('');
+  const [balance, setBalance] = useState(0);
+  const [transactionHistory, setTransactionHistory] = useState([]); // Logs state
   const router = useRouter();
 
-  const balance = 500.0;
-  const travelHistory = [
-    { id: '1', date: 'January 20, 2025', route: 'Carmona Estates to Waltermart', amount: '-15.00' },
-    { id: '2', date: 'January 19, 2025', route: 'Carmona Estates to Waltermart', amount: '-15.00' },
-    { id: '3', date: 'January 18, 2025', route: 'Carmona Estates to Waltermart', amount: '-15.00' },
-    { id: '4', date: 'January 17, 2025', route: 'Carmona Estates to Waltermart', amount: '-15.00' },
-    { id: '5', date: 'January 16, 2025', route: 'Carmona Estates to Waltermart', amount: '-15.00' },
-    { id: '6', date: 'January 20, 2025', route: 'Carmona Estates to Waltermart', amount: '-15.00' },
-    { id: '7', date: 'January 19, 2025', route: 'Carmona Estates to Waltermart', amount: '-15.00' },
-    { id: '8', date: 'January 18, 2025', route: 'Carmona Estates to Waltermart', amount: '-15.00' },
-    { id: '9', date: 'January 17, 2025', route: 'Carmona Estates to Waltermart', amount: '-15.00' },
-    { id: '10', date: 'January 16, 2025', route: 'Carmona Estates to Waltermart', amount: '-15.00' },
-    // Add more items as needed...
-  ];
+  // Helper: format MySQL datetime string to "January 25, 2025 at 8:13am"
+  const formatDatetime = (datetimeStr) => {
+    const date = new Date(datetimeStr.replace(' ', 'T'));
+    const options = { month: 'long', day: 'numeric', year: 'numeric' };
+    const datePart = new Intl.DateTimeFormat('en-US', options).format(date);
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    const minutesFormatted = minutes < 10 ? '0' + minutes : minutes;
+    return `${datePart} at ${hours}:${minutesFormatted}${ampm}`;
+  };
 
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        router.push('/');
-        return;
-      }
-      try {
-        const response = await fetch(`${config.API_URL}/user`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setFirstname(data.firstname);
-          setSurname(data.surname);
-        } else {
-          console.error('Failed to fetch user info:', response.status);
-          router.push('/');
-        }
-      } catch (error) {
-        console.error('Error fetching user info:', error);
+  const fetchUserInfo = async () => {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) {
+      router.push('/');
+      return;
+    }
+    try {
+      const response = await fetch(`${config.API_URL}/user`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFirstname(data.firstname);
+        setSurname(data.surname);
+        setBalance(parseFloat(data.balance));
+      } else {
+        console.error('Failed to fetch user info:', response.status);
         router.push('/');
       }
-    };
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+      router.push('/');
+    }
+  };
 
-    fetchUserInfo();
-  }, []);
+  const fetchTransactionHistory = async () => {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) {
+      router.push('/');
+      return;
+    }
+    try {
+      const response = await fetch(`${config.API_URL}/transactions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Expecting data to be an array of logs from inspection_logs.
+        setTransactionHistory(data);
+      } else {
+        console.error('Failed to fetch transaction history:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching transaction history:', error);
+    }
+  };
+
+  // useFocusEffect triggers on screen focus so that the info is always up to date.
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserInfo();
+      fetchTransactionHistory();
+    }, [])
+  );
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem('userToken');
     router.push('/');
   };
+
+  const renderTransactionItem = ({ item }) => {
+    return (
+      <View style={globalStyles.listItem}>
+        <View style={globalStyles.listItemLeft}>
+          <Text style={globalStyles.listItemDate}>{formatDatetime(item.scanned_datetime)}</Text>
+          <Text style={globalStyles.listItemPrimary}>
+            {item.origin} to {item.destination}
+          </Text>
+        </View>
+        <View style={globalStyles.listItemRight}>
+            <Text style={[globalStyles.listLeftBoxPrimaryText, { color: '#e74c3c' }]}>
+            - {parseFloat(item.fare).toFixed(2)}
+            </Text>
+        </View>
+      </View>
+    );
+  };  
 
   return (
     <View style={globalStyles.container}>
@@ -66,7 +112,7 @@ const Home = () => {
       <View style={localStyles.profileSection}>
         <Image source={require('../assets/images/user-icon.png')} style={localStyles.profileImage} />
         <View>
-          <Text style={localStyles.subText}>Good day!</Text>
+          <Text style={localStyles.subText}>Good day,</Text>
           <Text style={localStyles.welcomeText}>{firstname} {surname}!</Text>
         </View>
       </View>
@@ -74,28 +120,18 @@ const Home = () => {
       {/* Balance Section */}
       <View style={localStyles.balanceContainer}>
         <Text style={localStyles.balanceLabel}>Available Balance:</Text>
-        <Text style={localStyles.balanceAmount}>Php {balance.toFixed(2)}</Text>
+        <Text style={localStyles.balanceAmount}>PHP {balance.toFixed(2)}</Text>
       </View>
 
-      {/* Travel History Section */}
+      {/* Transaction History Section */}
       <View style={globalStyles.listContainer}>
-      <View style={globalStyles.sectionTitleContainer}>
-        <Text style={globalStyles.sectionTitle}>Travel History:</Text>
-      </View>
+        <View style={globalStyles.sectionTitleContainer}>
+          <Text style={globalStyles.sectionTitle}>Transaction History:</Text>
+        </View>
         <FlatList
-          data={travelHistory}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={globalStyles.listItem}>
-              <View style={globalStyles.listItemLeft}>
-                <Text style={globalStyles.listItemDate}>{item.date}</Text>
-                <Text style={globalStyles.listItemPrimary}>{item.route}</Text>
-              </View>
-              <View style={globalStyles.listItemRight}>
-                <Text style={globalStyles.listItemSecondary}>{item.amount}</Text>
-              </View>
-            </View>
-          )}
+          data={transactionHistory}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderTransactionItem}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
         />
