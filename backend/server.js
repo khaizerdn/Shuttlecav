@@ -132,6 +132,7 @@ app.get('/user', (req, res) => {
         phonenumber: user.phonenumber,
         username: user.username,
         tag_id: user.tag_id,
+        balance: user.balance  // Include the balance field here
       });
     });
   } catch (error) {
@@ -436,10 +437,10 @@ app.delete('/routes/:id', authenticateToken, (req, res) => {
 // Add a new inspection
 app.post('/inspections', authenticateToken, (req, res) => {
   // Extract inspector info from the token.
-  const inspector_id = req.user.userId;  // now using the inspector's id
+  const inspector_id = req.user.userId;
   const inspector_fullname = req.user.firstname + ' ' + req.user.surname;
 
-  // Extract the rest of the inspection data from the request body.
+  // Extract inspection data from the request body.
   const { driver, route, start_datetime, end_datetime, total_passengers, total_claimed_money, logs } = req.body;
   // Generate a unique inspection id using flake-id
   const inspectionId = intformat(flakeIdGen.next(), 'dec');
@@ -459,7 +460,7 @@ app.post('/inspections', authenticateToken, (req, res) => {
       inspectionQuery,
       [
         inspectionId,
-        inspector_id,           // logs the inspector's id
+        inspector_id,
         inspector_fullname,
         driver || '',
         origin || '',
@@ -477,30 +478,81 @@ app.post('/inspections', authenticateToken, (req, res) => {
           });
         }
         if (logs && logs.length > 0) {
+          // Map logs and include the fare for each log.
           const logValues = logs.map(log => [
             log.id,
             inspectionId,
             log.passenger_type,
             log.tag_id,
-            log.scanned_datetime
+            log.scanned_datetime,
+            log.fare  // fare should be sent in each log object
           ]);
-          const logQuery = 'INSERT INTO inspection_logs (id, inspection_id, passenger_type, tag_id, scanned_datetime) VALUES ?';
+          const logQuery = `
+            INSERT INTO inspection_logs 
+            (id, inspection_id, passenger_type, tag_id, scanned_datetime, fare) 
+            VALUES ?
+          `;
           db.query(logQuery, [logValues], (err, result) => {
             if (err) {
               return db.rollback(() => {
                 res.status(500).json({ message: 'Error inserting inspection logs' });
               });
             }
-            db.commit(err => {
+            // Update the "passenger" column using a JOIN with the users table.
+            const updatePassengerQuery = `
+              UPDATE inspection_logs il
+              JOIN users u ON u.tag_id = il.tag_id
+              SET il.passenger = u.id
+              WHERE il.inspection_id = ?
+            `;
+            db.query(updatePassengerQuery, [inspectionId], (err, result) => {
               if (err) {
                 return db.rollback(() => {
-                  res.status(500).json({ message: 'Error committing transaction' });
+                  res.status(500).json({ message: 'Error updating passenger column', error: err });
                 });
               }
-              return res.status(200).json({ message: 'Inspection recorded successfully' });
+              // For each log with a valid tag_id, update the corresponding user's balance.
+              const updateBalancePromises = logs
+                .filter(log => log.tag_id)
+                .map(log => {
+                  return new Promise((resolve, reject) => {
+                    const updateQuery = `
+                      UPDATE users 
+                      SET balance = balance - (
+                        (SELECT passenger_rate FROM passenger_types WHERE passenger_type = ?) + ?
+                      )
+                      WHERE tag_id = ?
+                    `;
+                    const routeAddedRate = added_rate ? parseFloat(added_rate) : 0;
+                    db.query(updateQuery, [log.passenger_type, routeAddedRate, log.tag_id], (err, result) => {
+                      if (err) {
+                        return reject(err);
+                      }
+                      resolve(result);
+                    });
+                  });
+                });
+              
+              Promise.all(updateBalancePromises)
+                .then(() => {
+                  db.commit(err => {
+                    if (err) {
+                      return db.rollback(() => {
+                        res.status(500).json({ message: 'Error committing transaction' });
+                      });
+                    }
+                    return res.status(200).json({ message: 'Inspection recorded and balances updated successfully' });
+                  });
+                })
+                .catch(err => {
+                  return db.rollback(() => {
+                    res.status(500).json({ message: 'Error updating user balances', error: err });
+                  });
+                });
             });
           });
         } else {
+          // No logs to process, commit the transaction.
           db.commit(err => {
             if (err) {
               return db.rollback(() => {
@@ -514,6 +566,7 @@ app.post('/inspections', authenticateToken, (req, res) => {
     );
   });
 });
+
 
 // Start the server
 app.listen(port, () => {

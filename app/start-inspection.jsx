@@ -101,23 +101,28 @@ export default function StartInspection() {
     const storedStartTime = startTime || await AsyncStorage.getItem('inspectionStartTime');
 
     const inspectionData = {
-      // The driver (driver's full name) comes from the URL parameters.
       driver: driver || '',
       route: {
         origin: origin || '',
         destination: destination || '',
-        added_rate: added_rate ? parseFloat(added_rate) : 0,
+        added_rate: routeAddedRate,
       },
       start_datetime: storedStartTime,
       end_datetime: endTime,
       total_passengers: scannedLogs.length,
       total_claimed_money: totalMoney,
-      logs: scannedLogs.map(log => ({
-        id: log.id,
-        passenger_type: log.passengerType,
-        tag_id: log.tagId,
-        scanned_datetime: log.timestamp
-      }))
+      logs: scannedLogs.map(log => {
+        const typeInfo = dbPassengerTypes.find(item => item.passenger_type === log.passengerType);
+        const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
+        const fare = passengerRate + routeAddedRate;
+        return {
+          id: log.id,
+          passenger_type: log.passengerType,
+          tag_id: log.tagId,
+          scanned_datetime: log.timestamp,
+          fare: fare
+        };
+      })
     };
 
     try {
