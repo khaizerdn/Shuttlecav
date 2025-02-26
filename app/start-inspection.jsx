@@ -7,9 +7,25 @@ import useNFC from './UseNFC';
 import NfcDisabledModal from './NfcDisabledModal';
 import { config } from './config';
 
-// Helper to format dates as MySQL datetime strings: YYYY-MM-DD HH:MM:SS
-const getMySQLDatetime = (date = new Date()) =>
-  date.toISOString().slice(0, 19).replace('T', ' ');
+// Helper to format dates as MySQL datetime strings in UTC+8: "YYYY-MM-DD HH:MM:SS"
+const getMySQLDatetime = (date = new Date()) => {
+  // Add 8 hours in milliseconds
+  const utc8Date = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+  return utc8Date.toISOString().slice(0, 19).replace('T', ' ');
+};
+
+const formatDatetime = (datetimeStr) => {
+  const date = new Date(datetimeStr.replace(' ', 'T'));
+  const options = { month: 'long', day: 'numeric', year: 'numeric' };
+  const datePart = new Intl.DateTimeFormat('en-US', options).format(date);
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const minutesFormatted = minutes < 10 ? '0' + minutes : minutes;
+  return `${datePart} at ${hours}:${minutesFormatted}${ampm}`;
+};
 
 export default function StartInspection() {
   // Extract parameters from URL (including driver's name now provided as "driver")
@@ -180,13 +196,13 @@ export default function StartInspection() {
     return (
       <View style={globalStyles.listItem}>
         <View style={[globalStyles.listLeftBox, { marginRight: 10 }]}>
-          <Text style={globalStyles.listLeftBoxSecondaryText}>PHP</Text>
-          <Text style={globalStyles.listLeftBoxPrimaryText}>
-            {fare.toFixed(2)}
+          <Text style={[globalStyles.listLeftBoxSecondaryText, { color: '#3578E5' }]}>PHP</Text>
+          <Text style={[globalStyles.listLeftBoxPrimaryText, { color: '#3578E5' }]}>
+            +{fare.toFixed(2)}
           </Text>
         </View>
         <View style={globalStyles.listItemLeft}>
-          <Text style={globalStyles.listItemDate}>{item.timestamp}</Text>
+          <Text style={globalStyles.listItemDate}>{formatDatetime(item.timestamp)}</Text>
           <Text style={globalStyles.listItemPrimary}>
             {item.passengerType}{' '}
             <Text style={globalStyles.listItemSecondary}>
