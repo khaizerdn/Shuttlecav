@@ -9,11 +9,12 @@ import { config } from './config';
 
 // Helper to format dates as MySQL datetime strings in UTC+8: "YYYY-MM-DD HH:MM:SS"
 const getMySQLDatetime = (date = new Date()) => {
-  const utc8Date = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+  const utc8Date = new Date(date.getTime() + 8 * 60 * 60 * 1000);
   return utc8Date.toISOString().slice(0, 19).replace('T', ' ');
 };
 
 const formatDatetime = (datetimeStr) => {
+  if (!datetimeStr) return 'N/A';
   const date = new Date(datetimeStr.replace(' ', 'T'));
   const options = { month: 'long', day: 'numeric', year: 'numeric' };
   const datePart = new Intl.DateTimeFormat('en-US', options).format(date);
@@ -27,7 +28,7 @@ const formatDatetime = (datetimeStr) => {
 };
 
 export default function StartInspection() {
-  // Extract parameters from URL (including a unique shuttle identifier such as plate)
+  // Extract parameters from URL (driver, plate, origin, destination, added_rate)
   const { driver, plate, origin, destination, added_rate } = useLocalSearchParams();
   const { scanning, tagData, startScanning, endScanning, checkNfcEnabled, enableNFC } = useNFC();
 
@@ -35,7 +36,7 @@ export default function StartInspection() {
   const inspectionKey = plate ? `inspectionStartTime_${plate}` : 'inspectionStartTime';
   const logsKey = plate ? `scannedLogs_${plate}` : 'scannedLogs';
 
-  // States for inspection start time, logs, and modals
+  // State variables for inspection, logs, modals, and manual add flag
   const [startTime, setStartTime] = useState(null);
   const [scannedLogs, setScannedLogs] = useState([]);
   const [showPassengerModal, setShowPassengerModal] = useState(false);
@@ -44,8 +45,36 @@ export default function StartInspection() {
   const [showEndModal, setShowEndModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [dbPassengerTypes, setDbPassengerTypes] = useState([]);
+  const [manualAdd, setManualAdd] = useState(false);
 
-  // Restore inspection state specific to this shuttle when the component mounts
+  // New states for inspector info and inspection overview receipt modal
+  const [inspectorName, setInspectorName] = useState('N/A');
+  const [inspectionOverview, setInspectionOverview] = useState(null);
+  const [showInspectionOverviewModal, setShowInspectionOverviewModal] = useState(false);
+
+  // Fetch logged in user info (inspector) from the /user endpoint using the JWT token.
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const response = await fetch(`${config.API_URL}/user`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const fullName = `${data.firstname} ${data.surname}`;
+          setInspectorName(fullName);
+        } else {
+          console.error('Error fetching user info');
+        }
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+      }
+    }
+    fetchUser();
+  }, []);
+
+  // Restore inspection state for this shuttle when the component mounts.
   useEffect(() => {
     async function restoreInspection() {
       const storedStartTime = await AsyncStorage.getItem(inspectionKey);
@@ -55,21 +84,21 @@ export default function StartInspection() {
         if (storedLogs) {
           setScannedLogs(JSON.parse(storedLogs));
         }
-        // Resume NFC scanning if an inspection is in progress for this shuttle.
+        // Resume NFC scanning if an inspection is in progress.
         startScanning();
       }
     }
     restoreInspection();
   }, [inspectionKey, logsKey]);
 
-  // Persist scannedLogs to AsyncStorage (for this shuttle) when they change.
+  // Persist scannedLogs to AsyncStorage when they change.
   useEffect(() => {
     if (startTime) {
       AsyncStorage.setItem(logsKey, JSON.stringify(scannedLogs));
     }
   }, [scannedLogs, startTime, logsKey]);
 
-  // Fetch passenger types from the backend
+  // Fetch passenger types from the backend.
   useEffect(() => {
     fetchPassengerTypes();
   }, []);
@@ -94,20 +123,31 @@ export default function StartInspection() {
 
   // Open passenger modal when NFC tag data is detected.
   useEffect(() => {
-    if (tagData && tagData.id && !showPassengerModal) {
+    if (tagData && tagData.id && !showPassengerModal && !manualAdd) {
       setShowPassengerModal(true);
     }
-  }, [tagData, showPassengerModal]);
+  }, [tagData, showPassengerModal, manualAdd]);
 
-  // When a passenger is selected, check the card's cumulative fare and then add a log entry.
+  // Handle selection of a passenger type.
   const handlePassengerSelect = async (passengerType) => {
-    // Get the fare for the current scan
     const typeInfo = dbPassengerTypes.find(item => item.passenger_type === passengerType);
     const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
     const routeAddedRate = added_rate ? parseFloat(added_rate) : 0;
     const currentFare = passengerRate + routeAddedRate;
 
-    // Calculate the total fare already scanned for this card in this inspection
+    if (manualAdd) {
+      const newLog = {
+        id: Date.now().toString(),
+        timestamp: getMySQLDatetime(),
+        passengerType,
+        tagId: null,
+      };
+      setScannedLogs(prevLogs => [newLog, ...prevLogs]);
+      setShowPassengerModal(false);
+      setManualAdd(false);
+      return;
+    }
+
     const accumulatedFare = scannedLogs
       .filter(log => log.tagId === tagData.id)
       .reduce((acc, log) => {
@@ -115,11 +155,9 @@ export default function StartInspection() {
         const logPassengerRate = logTypeInfo ? parseFloat(logTypeInfo.passenger_rate) : 0;
         return acc + (logPassengerRate + routeAddedRate);
       }, 0);
-    
-    // Total fare to be charged if this scan is accepted
+
     const totalFareForThisCard = currentFare + accumulatedFare;
 
-    // Check user balance using the /check-balance endpoint with the cumulative fare.
     try {
       const token = await AsyncStorage.getItem('userToken');
       const response = await fetch(`${config.API_URL}/check-balance`, {
@@ -133,7 +171,6 @@ export default function StartInspection() {
       if (!response.ok) {
         const errorData = await response.json();
         Alert.alert('Balance Issue', errorData.message || 'Insufficient balance on this card');
-        // Do not add log if balance is insufficient.
         return;
       }
     } catch (error) {
@@ -142,7 +179,6 @@ export default function StartInspection() {
       return;
     }
 
-    // If balance is sufficient, create the log entry.
     const newLog = {
       id: Date.now().toString(),
       timestamp: getMySQLDatetime(),
@@ -157,17 +193,19 @@ export default function StartInspection() {
   };
 
   const handleManualAdd = () => {
+    setManualAdd(true);
     setShowPassengerModal(true);
   };
 
   const handleCancelPassengerModal = () => {
     setShowPassengerModal(false);
+    setManualAdd(false);
     if (tagData && tagData.id) {
       startScanning();
     }
   };
 
-  // Start inspection: record the start time (for this shuttle) and begin NFC scanning.
+  // Start inspection: record the start time and begin NFC scanning.
   const handleStartInspection = async () => {
     const isNfcEnabled = await checkNfcEnabled();
     if (isNfcEnabled) {
@@ -180,18 +218,25 @@ export default function StartInspection() {
     }
   };
 
-  // End inspection: stop scanning, post inspection data, and clear the stored state.
+  // End inspection: stop scanning, post inspection data, and show the receipt-style overview modal.
   const handleEndInspection = async () => {
     endScanning();
     const endTime = getMySQLDatetime();
-    const storedStartTime = startTime || await AsyncStorage.getItem(inspectionKey);
+    const storedStartTime = startTime || (await AsyncStorage.getItem(inspectionKey));
+
+    // Compute totals and passenger counts.
+    const routeAddedRate = added_rate ? parseFloat(added_rate) : 0;
+    const passengerCounts = scannedLogs.reduce((acc, log) => {
+      acc[log.passengerType] = (acc[log.passengerType] || 0) + 1;
+      return acc;
+    }, {});
 
     const inspectionData = {
       driver: driver || '',
       route: {
         origin: origin || '',
         destination: destination || '',
-        added_rate: added_rate ? parseFloat(added_rate) : 0,
+        added_rate: routeAddedRate,
       },
       start_datetime: storedStartTime,
       end_datetime: endTime,
@@ -199,12 +244,12 @@ export default function StartInspection() {
       total_claimed_money: scannedLogs.reduce((acc, log) => {
         const typeInfo = dbPassengerTypes.find(item => item.passenger_type === log.passengerType);
         const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
-        return acc + (passengerRate + (added_rate ? parseFloat(added_rate) : 0));
+        return acc + (passengerRate + routeAddedRate);
       }, 0),
       logs: scannedLogs.map(log => {
         const typeInfo = dbPassengerTypes.find(item => item.passenger_type === log.passengerType);
         const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
-        const fare = passengerRate + (added_rate ? parseFloat(added_rate) : 0);
+        const fare = passengerRate + routeAddedRate;
         return {
           id: log.id,
           passenger_type: log.passengerType,
@@ -213,7 +258,17 @@ export default function StartInspection() {
           fare: fare,
         };
       }),
+      passengerCounts: passengerCounts,
     };
+
+    // Add extra overview data with the receipt theme.
+    const currentFareRates = dbPassengerTypes.map(item => ({
+      passenger_type: item.passenger_type,
+      current_fare_rate: parseFloat(item.passenger_rate) + routeAddedRate,
+    }));
+    // The inspector name comes from the /user endpoint.
+    inspectionData.inspector = inspectorName;
+    inspectionData.currentFareRates = currentFareRates;
 
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -226,6 +281,12 @@ export default function StartInspection() {
         body: JSON.stringify(inspectionData),
       });
       if (response.ok) {
+        const resData = await response.json();
+        // Expect the backend to return the generated inspectionId.
+        inspectionData.inspectionId = resData.inspectionId;
+        setInspectionOverview(inspectionData);
+        setShowInspectionOverviewModal(true);
+        // Clear stored state.
         await AsyncStorage.removeItem(inspectionKey);
         await AsyncStorage.removeItem(logsKey);
         setStartTime(null);
@@ -240,7 +301,7 @@ export default function StartInspection() {
     }
   };
 
-  // Cancel inspection: stop scanning and clear the stored state (for this shuttle).
+  // Cancel inspection: stop scanning and clear stored state.
   const handleCancelInspection = async () => {
     endScanning();
     setStartTime(null);
@@ -267,7 +328,7 @@ export default function StartInspection() {
     item => (passengerCounts[item.passenger_type] || 0) > 0
   );
 
-  const handleDeleteLog = (id) => {
+  const handleDeleteLog = id => {
     setScannedLogs(prevLogs => prevLogs.filter(log => log.id !== id));
   };
 
@@ -522,6 +583,71 @@ export default function StartInspection() {
         }}
         onCancel={() => setShowNfcDisabledModal(false)}
       />
+
+      {/* Inspection Overview (Receipt) Modal */}
+      <Modal visible={showInspectionOverviewModal} animationType="slide" transparent={true}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={styles.receiptWrapper}>
+            <View style={[globalStyles.modalContainer, styles.receiptContainer]}>
+              <Text style={styles.receiptTitle}>Inspection Receipt</Text>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Inspection ID:</Text>
+                <Text style={styles.receiptValue}>{inspectionOverview?.inspectionId || 'N/A'}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Inspector:</Text>
+                <Text style={styles.receiptValue}>{inspectionOverview?.inspector}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Driver:</Text>
+                <Text style={styles.receiptValue}>{driver || 'N/A'}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Route:</Text>
+                <Text style={styles.receiptValue}>
+                  {inspectionOverview?.route.origin} to {inspectionOverview?.route.destination}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Added Rate:</Text>
+                <Text style={styles.receiptValue}>PHP {inspectionOverview?.route.added_rate.toFixed(2)}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Total Passengers:</Text>
+                <Text style={styles.receiptValue}>{inspectionOverview?.total_passengers}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Total Money:</Text>
+                <Text style={styles.receiptValue}>PHP {inspectionOverview?.total_claimed_money.toFixed(2)}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>End Date:</Text>
+                <Text style={styles.receiptValue}>{formatDatetime(inspectionOverview?.end_datetime)}</Text>
+              </View>
+              <View style={styles.receiptDivider} />
+              <Text style={styles.receiptSubtitle}>Passenger Breakdown</Text>
+              {inspectionOverview?.passengerCounts &&
+                Object.keys(inspectionOverview.passengerCounts).map((type, index) => (
+                  <View style={styles.receiptRow} key={index}>
+                    <Text style={styles.receiptLabel}>{type}:</Text>
+                    <Text style={styles.receiptValue}>{inspectionOverview.passengerCounts[type]}</Text>
+                  </View>
+                ))}
+              <View style={styles.receiptDivider} />
+              <Text style={styles.receiptSubtitle}>Fare Rates</Text>
+              {inspectionOverview?.currentFareRates.map((fareInfo, index) => (
+                <View style={styles.receiptRow} key={index}>
+                  <Text style={styles.receiptLabel}>{fareInfo.passenger_type}:</Text>
+                  <Text style={styles.receiptValue}>PHP {fareInfo.current_fare_rate.toFixed(2)}</Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity style={[globalStyles.button, styles.outsideButton]} onPress={() => setShowInspectionOverviewModal(false)}>
+              <Text style={globalStyles.buttonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -588,6 +714,67 @@ const styles = StyleSheet.create({
   countText: {
     color: '#000',
     fontSize: 16,
+    textAlign: 'center',
+  },
+  // Wrapper to contain the receipt container and the outside button.
+  receiptWrapper: {
+    width: '90%',
+    alignSelf: 'center',
+    alignItems: 'stretch',
+  },
+  // Receipt container with border and padding.
+  receiptContainer: {
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    width: '100%',
+  },
+  // Button placed outside the bordered container.
+  outsideButton: {
+    marginTop: 10,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  // Receipt title centered at the top.
+  receiptTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  // Each row is a two-column layout.
+  receiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 4,
+  },
+  // Fixed width for labels to ensure vertical alignment.
+  receiptLabel: {
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'left',
+    width: 130,
+  },
+  // The value occupies the remaining space and is right aligned.
+  receiptValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'right',
+    flex: 1,
+  },
+  receiptDivider: {
+    borderBottomColor: '#ccc',
+    borderBottomWidth: 1,
+    marginVertical: 10,
+  },
+  receiptSubtitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 6,
     textAlign: 'center',
   },
 });

@@ -543,7 +543,10 @@ app.post('/inspections', authenticateToken, (req, res) => {
                         res.status(500).json({ message: 'Error committing transaction' });
                       });
                     }
-                    return res.status(200).json({ message: 'Inspection recorded and balances updated successfully' });
+                    return res.status(200).json({ 
+                      message: 'Inspection recorded and balances updated successfully', 
+                      inspectionId: inspectionId 
+                    });
                   });
                 })
                 .catch(err => {
@@ -561,14 +564,16 @@ app.post('/inspections', authenticateToken, (req, res) => {
                 res.status(500).json({ message: 'Error committing transaction' });
               });
             }
-            return res.status(200).json({ message: 'Inspection recorded successfully' });
+            return res.status(200).json({ 
+              message: 'Inspection recorded successfully', 
+              inspectionId: inspectionId 
+            });
           });
         }
       }
     );
   });
 });
-
 
 // Get Transaction History for the logged-in user
 app.get('/transactions', authenticateToken, (req, res) => {
