@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import globalStyles from './globalstyles';
@@ -9,7 +9,6 @@ import { config } from './config';
 
 // Helper to format dates as MySQL datetime strings in UTC+8: "YYYY-MM-DD HH:MM:SS"
 const getMySQLDatetime = (date = new Date()) => {
-  // Add 8 hours in milliseconds
   const utc8Date = new Date(date.getTime() + (8 * 60 * 60 * 1000));
   return utc8Date.toISOString().slice(0, 19).replace('T', ' ');
 };
@@ -28,23 +27,53 @@ const formatDatetime = (datetimeStr) => {
 };
 
 export default function StartInspection() {
-  // Extract parameters from URL (including driver's name now provided as "driver")
+  // Extract parameters from URL (including a unique shuttle identifier such as plate)
   const { driver, plate, origin, destination, added_rate } = useLocalSearchParams();
   const { scanning, tagData, startScanning, endScanning, checkNfcEnabled, enableNFC } = useNFC();
 
-  // States for start time, logs, modals, and passenger types
+  // Generate unique keys for this shuttle's inspection state
+  const inspectionKey = plate ? `inspectionStartTime_${plate}` : 'inspectionStartTime';
+  const logsKey = plate ? `scannedLogs_${plate}` : 'scannedLogs';
+
+  // States for inspection start time, logs, and modals
   const [startTime, setStartTime] = useState(null);
   const [scannedLogs, setScannedLogs] = useState([]);
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [showNfcDisabledModal, setShowNfcDisabledModal] = useState(false);
   const [showCountsModal, setShowCountsModal] = useState(false);
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [dbPassengerTypes, setDbPassengerTypes] = useState([]);
 
+  // Restore inspection state specific to this shuttle when the component mounts
+  useEffect(() => {
+    async function restoreInspection() {
+      const storedStartTime = await AsyncStorage.getItem(inspectionKey);
+      const storedLogs = await AsyncStorage.getItem(logsKey);
+      if (storedStartTime) {
+        setStartTime(storedStartTime);
+        if (storedLogs) {
+          setScannedLogs(JSON.parse(storedLogs));
+        }
+        // Resume NFC scanning if an inspection is in progress for this shuttle.
+        startScanning();
+      }
+    }
+    restoreInspection();
+  }, [inspectionKey, logsKey]);
+
+  // Persist scannedLogs to AsyncStorage (for this shuttle) when they change.
+  useEffect(() => {
+    if (startTime) {
+      AsyncStorage.setItem(logsKey, JSON.stringify(scannedLogs));
+    }
+  }, [scannedLogs, startTime, logsKey]);
+
+  // Fetch passenger types from the backend
   useEffect(() => {
     fetchPassengerTypes();
   }, []);
 
-  // Fetch passenger types from the backend
   const fetchPassengerTypes = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -70,16 +99,57 @@ export default function StartInspection() {
     }
   }, [tagData, showPassengerModal]);
 
-  // When a passenger is selected, create a log with a correctly formatted timestamp.
-  const handlePassengerSelect = (passengerType) => {
+  // When a passenger is selected, check the card's cumulative fare and then add a log entry.
+  const handlePassengerSelect = async (passengerType) => {
+    // Get the fare for the current scan
+    const typeInfo = dbPassengerTypes.find(item => item.passenger_type === passengerType);
+    const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
+    const routeAddedRate = added_rate ? parseFloat(added_rate) : 0;
+    const currentFare = passengerRate + routeAddedRate;
+
+    // Calculate the total fare already scanned for this card in this inspection
+    const accumulatedFare = scannedLogs
+      .filter(log => log.tagId === tagData.id)
+      .reduce((acc, log) => {
+        const logTypeInfo = dbPassengerTypes.find(item => item.passenger_type === log.passengerType);
+        const logPassengerRate = logTypeInfo ? parseFloat(logTypeInfo.passenger_rate) : 0;
+        return acc + (logPassengerRate + routeAddedRate);
+      }, 0);
+    
+    // Total fare to be charged if this scan is accepted
+    const totalFareForThisCard = currentFare + accumulatedFare;
+
+    // Check user balance using the /check-balance endpoint with the cumulative fare.
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/check-balance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ tagId: tagData.id, fare: totalFareForThisCard }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        Alert.alert('Balance Issue', errorData.message || 'Insufficient balance on this card');
+        // Do not add log if balance is insufficient.
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking balance:', error);
+      Alert.alert('Error', 'Error checking balance.');
+      return;
+    }
+
+    // If balance is sufficient, create the log entry.
     const newLog = {
       id: Date.now().toString(),
-      // Format the current date as MySQL datetime string
       timestamp: getMySQLDatetime(),
       passengerType,
       tagId: tagData && tagData.id ? tagData.id : null,
     };
-    setScannedLogs((prevLogs) => [newLog, ...prevLogs]);
+    setScannedLogs(prevLogs => [newLog, ...prevLogs]);
     setShowPassengerModal(false);
     if (tagData && tagData.id) {
       startScanning();
@@ -90,55 +160,59 @@ export default function StartInspection() {
     setShowPassengerModal(true);
   };
 
-  const handleCancel = () => {
+  const handleCancelPassengerModal = () => {
     setShowPassengerModal(false);
     if (tagData && tagData.id) {
       startScanning();
     }
   };
 
-  // When starting the inspection, record a properly formatted start time and start NFC scanning.
+  // Start inspection: record the start time (for this shuttle) and begin NFC scanning.
   const handleStartInspection = async () => {
     const isNfcEnabled = await checkNfcEnabled();
     if (isNfcEnabled) {
       startScanning();
       const currentStartTime = getMySQLDatetime();
       setStartTime(currentStartTime);
-      await AsyncStorage.setItem('inspectionStartTime', currentStartTime);
+      await AsyncStorage.setItem(inspectionKey, currentStartTime);
     } else {
       setShowNfcDisabledModal(true);
     }
   };
 
-  // When ending the inspection, record end time, assemble the inspection data, and post it to the backend.
+  // End inspection: stop scanning, post inspection data, and clear the stored state.
   const handleEndInspection = async () => {
     endScanning();
     const endTime = getMySQLDatetime();
-    const storedStartTime = startTime || await AsyncStorage.getItem('inspectionStartTime');
+    const storedStartTime = startTime || await AsyncStorage.getItem(inspectionKey);
 
     const inspectionData = {
       driver: driver || '',
       route: {
         origin: origin || '',
         destination: destination || '',
-        added_rate: routeAddedRate,
+        added_rate: added_rate ? parseFloat(added_rate) : 0,
       },
       start_datetime: storedStartTime,
       end_datetime: endTime,
       total_passengers: scannedLogs.length,
-      total_claimed_money: totalMoney,
+      total_claimed_money: scannedLogs.reduce((acc, log) => {
+        const typeInfo = dbPassengerTypes.find(item => item.passenger_type === log.passengerType);
+        const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
+        return acc + (passengerRate + (added_rate ? parseFloat(added_rate) : 0));
+      }, 0),
       logs: scannedLogs.map(log => {
         const typeInfo = dbPassengerTypes.find(item => item.passenger_type === log.passengerType);
         const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
-        const fare = passengerRate + routeAddedRate;
+        const fare = passengerRate + (added_rate ? parseFloat(added_rate) : 0);
         return {
           id: log.id,
           passenger_type: log.passengerType,
           tag_id: log.tagId,
           scanned_datetime: log.timestamp,
-          fare: fare
+          fare: fare,
         };
-      })
+      }),
     };
 
     try {
@@ -152,8 +226,8 @@ export default function StartInspection() {
         body: JSON.stringify(inspectionData),
       });
       if (response.ok) {
-        await AsyncStorage.removeItem('inspectionStartTime');
-        // Optionally reset state or navigate away after a successful record.
+        await AsyncStorage.removeItem(inspectionKey);
+        await AsyncStorage.removeItem(logsKey);
         setStartTime(null);
         setScannedLogs([]);
         console.log('Inspection recorded successfully');
@@ -166,7 +240,17 @@ export default function StartInspection() {
     }
   };
 
-  // Compute values for the UI based on scanned logs and added route rate.
+  // Cancel inspection: stop scanning and clear the stored state (for this shuttle).
+  const handleCancelInspection = async () => {
+    endScanning();
+    setStartTime(null);
+    setScannedLogs([]);
+    await AsyncStorage.removeItem(inspectionKey);
+    await AsyncStorage.removeItem(logsKey);
+    console.log('Inspection canceled');
+  };
+
+  // Compute totals for display.
   const routeAddedRate = added_rate ? parseFloat(added_rate) : 0;
   const totalMoney = scannedLogs.reduce((acc, log) => {
     const typeInfo = dbPassengerTypes.find(item => item.passenger_type === log.passengerType);
@@ -175,24 +259,22 @@ export default function StartInspection() {
   }, 0);
 
   const passengerCounts = scannedLogs.reduce((acc, log) => {
-    const type = log.passengerType;
-    acc[type] = (acc[type] || 0) + 1;
+    acc[log.passengerType] = (acc[log.passengerType] || 0) + 1;
     return acc;
   }, {});
 
   const scannedPassengerTypes = dbPassengerTypes.filter(
-    (item) => (passengerCounts[item.passenger_type] || 0) > 0
+    item => (passengerCounts[item.passenger_type] || 0) > 0
   );
 
   const handleDeleteLog = (id) => {
-    setScannedLogs((prevLogs) => prevLogs.filter((log) => log.id !== id));
+    setScannedLogs(prevLogs => prevLogs.filter(log => log.id !== id));
   };
 
   const renderLogItem = ({ item }) => {
     const typeInfo = dbPassengerTypes.find(it => it.passenger_type === item.passengerType);
     const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
     const fare = passengerRate + routeAddedRate;
-
     return (
       <View style={globalStyles.listItem}>
         <View style={[globalStyles.listLeftBox, { marginRight: 10 }]}>
@@ -261,7 +343,7 @@ export default function StartInspection() {
         ) : (
           <FlatList
             data={scannedLogs}
-            keyExtractor={(item) => item.id}
+            keyExtractor={item => item.id}
             renderItem={renderLogItem}
             contentContainerStyle={{ paddingBottom: 20 }}
             showsVerticalScrollIndicator={false}
@@ -270,7 +352,7 @@ export default function StartInspection() {
       </View>
       <View style={globalStyles.separator} />
 
-      {/* Summary Container: Total Passengers, Plus Button, Total Money */}
+      {/* Summary Container */}
       <View style={styles.summaryContainer}>
         <TouchableOpacity
           style={styles.summaryItem}
@@ -292,14 +374,22 @@ export default function StartInspection() {
         </View>
       </View>
 
-      {/* Start/End Button */}
+      {/* Start/End/Cancel Buttons */}
       {scanning ? (
-        <TouchableOpacity
-          style={[globalStyles.button, { backgroundColor: '#e74c3c' }]}
-          onPress={handleEndInspection}
-        >
-          <Text style={globalStyles.buttonText}>End</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <TouchableOpacity
+            style={[globalStyles.button, { backgroundColor: '#e74c3c', flex: 1, marginRight: 5 }]}
+            onPress={() => setShowCancelModal(true)}
+          >
+            <Text style={globalStyles.buttonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[globalStyles.button, { backgroundColor: '#3578E5', flex: 1, marginLeft: 5 }]}
+            onPress={() => setShowEndModal(true)}
+          >
+            <Text style={globalStyles.buttonText}>End</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <TouchableOpacity style={globalStyles.button} onPress={handleStartInspection}>
           <Text style={globalStyles.buttonText}>Start</Text>
@@ -312,7 +402,7 @@ export default function StartInspection() {
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Select Passenger Type</Text>
             {dbPassengerTypes.length > 0 ? (
-              dbPassengerTypes.map((item) => (
+              dbPassengerTypes.map(item => (
                 <TouchableOpacity
                   key={item.id}
                   style={globalStyles.button}
@@ -324,7 +414,7 @@ export default function StartInspection() {
             ) : (
               <Text style={styles.logsPlaceholder}>No passenger types available.</Text>
             )}
-            <TouchableOpacity style={globalStyles.cancelButton} onPress={handleCancel}>
+            <TouchableOpacity style={globalStyles.cancelButton} onPress={handleCancelPassengerModal}>
               <Text style={globalStyles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -337,7 +427,7 @@ export default function StartInspection() {
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Number of Passengers</Text>
             {scannedPassengerTypes.length > 0 ? (
-              scannedPassengerTypes.map((item) => (
+              scannedPassengerTypes.map(item => (
                 <View key={item.id} style={globalStyles.listItem}>
                   <View style={styles.leftContainer}>
                     <View style={styles.countContainer}>
@@ -357,6 +447,64 @@ export default function StartInspection() {
             <View style={globalStyles.modalButtons}>
               <TouchableOpacity style={globalStyles.button} onPress={() => setShowCountsModal(false)}>
                 <Text style={globalStyles.buttonText}>Go back</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* End Confirmation Modal */}
+      <Modal visible={showEndModal} animationType="none" transparent={true}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalContainer}>
+            <Text style={globalStyles.modalTitle}>Confirm End Inspection</Text>
+            <Text style={globalStyles.modalText}>
+              Are you sure you want to end the inspection?
+            </Text>
+            <View style={globalStyles.modalButtons}>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]}
+                onPress={() => setShowEndModal(false)}
+              >
+                <Text style={globalStyles.actionButtonText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#3578E5' }]}
+                onPress={() => {
+                  setShowEndModal(false);
+                  handleEndInspection();
+                }}
+              >
+                <Text style={globalStyles.actionButtonText}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Cancel Confirmation Modal */}
+      <Modal visible={showCancelModal} animationType="none" transparent={true}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalContainer}>
+            <Text style={globalStyles.modalTitle}>Confirm Cancel Inspection</Text>
+            <Text style={globalStyles.modalText}>
+              Are you sure you want to cancel the inspection?
+            </Text>
+            <View style={globalStyles.modalButtons}>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]}
+                onPress={() => setShowCancelModal(false)}
+              >
+                <Text style={globalStyles.actionButtonText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#3578E5' }]}
+                onPress={() => {
+                  setShowCancelModal(false);
+                  handleCancelInspection();
+                }}
+              >
+                <Text style={globalStyles.actionButtonText}>Yes</Text>
               </TouchableOpacity>
             </View>
           </View>

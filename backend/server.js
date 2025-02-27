@@ -589,6 +589,32 @@ app.get('/transactions', authenticateToken, (req, res) => {
   }
 });
 
+// Check Balance Endpoint
+app.post('/check-balance', authenticateToken, (req, res) => {
+  const { tagId, fare } = req.body;
+  if (!tagId || fare == null) {
+    return res.status(400).json({ message: 'Missing tagId or fare in request' });
+  }
+
+  const query = 'SELECT balance FROM users WHERE tag_id = ?';
+  db.query(query, [tagId], (err, results) => {
+    if (err) {
+      console.error('Database error on balance check:', err);
+      return res.status(500).json({ message: 'Error checking balance' });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'No user linked to this NFC card' });
+    }
+    const balance = parseFloat(results[0].balance);
+    const fareAmount = parseFloat(fare);
+    
+    if (balance < fareAmount) {
+      return res.status(400).json({ message: 'Insufficient balance', balance });
+    } else {
+      return res.status(200).json({ message: 'Sufficient balance', balance });
+    }
+  });
+});
 
 // Start the server
 app.listen(port, () => {
