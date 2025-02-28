@@ -440,8 +440,8 @@ app.post('/inspections', authenticateToken, (req, res) => {
   const inspector_id = req.user.userId;
   const inspector_fullname = req.user.firstname + ' ' + req.user.surname;
 
-  // Extract inspection data from the request body.
-  const { driver, route, start_datetime, end_datetime, total_passengers, total_claimed_money, logs } = req.body;
+  // Extract inspection data from the request body (including plate).
+  const { driver, plate, route, start_datetime, end_datetime, total_passengers, total_claimed_money, logs } = req.body;
   // Generate a unique inspection id using flake-id
   const inspectionId = intformat(flakeIdGen.next(), 'dec');
   
@@ -450,10 +450,11 @@ app.post('/inspections', authenticateToken, (req, res) => {
       return res.status(500).json({ message: 'Transaction initiation failed' });
     }
     
+    // Include plate in the inspection record.
     const inspectionQuery = `
       INSERT INTO inspections 
-      (id, inspector_id, inspector_fullname, driver, origin, destination, added_rate, start_datetime, end_datetime, total_passengers, total_claimed_money)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, inspector_id, inspector_fullname, driver, plate, origin, destination, added_rate, start_datetime, end_datetime, total_passengers, total_claimed_money)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const { origin, destination, added_rate } = route;
     db.query(
@@ -463,6 +464,7 @@ app.post('/inspections', authenticateToken, (req, res) => {
         inspector_id,
         inspector_fullname,
         driver || '',
+        plate || '',
         origin || '',
         destination || '',
         added_rate ? parseFloat(added_rate) : 0,
@@ -478,20 +480,21 @@ app.post('/inspections', authenticateToken, (req, res) => {
           });
         }
         if (logs && logs.length > 0) {
-          // Map logs and include fare, origin, and destination in each log.
+          // Map logs to include fare, origin, destination, and plate in each log.
           const logValues = logs.map(log => [
             log.id,
             inspectionId,
             log.passenger_type,
             log.tag_id,
             log.scanned_datetime,
-            log.fare,         // fare from log object
-            origin || '',     // origin from route
-            destination || '' // destination from route
+            log.fare,          // fare from log object
+            origin || '',      // origin from route
+            destination || '', // destination from route
+            plate || ''        // plate number from request body
           ]);
           const logQuery = `
             INSERT INTO inspection_logs 
-            (id, inspection_id, passenger_type, tag_id, scanned_datetime, fare, origin, destination) 
+            (id, inspection_id, passenger_type, tag_id, scanned_datetime, fare, origin, destination, plate) 
             VALUES ?
           `;
           db.query(logQuery, [logValues], (err, result) => {
@@ -575,6 +578,7 @@ app.post('/inspections', authenticateToken, (req, res) => {
   });
 });
 
+
 // Get Transaction History for the logged-in user
 app.get('/transactions', authenticateToken, (req, res) => {
   try {
@@ -620,6 +624,61 @@ app.post('/check-balance', authenticateToken, (req, res) => {
     }
   });
 });
+
+// API Endpoint: GET /transaction-history
+app.get('/transaction-history', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const query = `
+    SELECT id, inspection_id, passenger_type, tag_id, scanned_datetime, fare, origin, destination 
+    FROM inspection_logs
+    WHERE passenger = ?
+    ORDER BY scanned_datetime DESC
+  `;
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Error fetching transaction history:', err);
+      return res.status(500).json({ message: 'Error fetching transaction history' });
+    }
+    return res.status(200).json(results);
+  });
+});
+
+// API Endpoint: GET /inspection-logs
+app.get('/inspection-logs', authenticateToken, (req, res) => {
+  const inspectorId = req.user.userId;
+  const query = `
+    SELECT id, start_datetime, driver, plate, total_claimed_money, origin, destination
+    FROM inspections
+    WHERE inspector_id = ?
+    ORDER BY start_datetime DESC
+  `;
+  db.query(query, [inspectorId], (err, results) => {
+    if (err) {
+      console.error('Error fetching inspection logs:', err);
+      return res.status(500).json({ message: 'Error fetching inspection logs' });
+    }
+    return res.status(200).json(results);
+  });
+});
+
+
+// API Endpoint: GET /activity-logs
+app.get('/activity-logs', authenticateToken, (req, res) => {
+  const query = `
+    SELECT id, start_datetime, driver, plate, inspector_fullname, total_claimed_money, origin, destination
+    FROM inspections
+    ORDER BY start_datetime DESC
+  `;
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching activity logs:', err);
+      return res.status(500).json({ message: 'Error fetching activity logs' });
+    }
+    return res.status(200).json(results);
+  });
+});
+
+
 
 // Start the server
 app.listen(port, () => {

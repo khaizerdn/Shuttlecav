@@ -83,11 +83,6 @@ const Home = () => {
     }, [])
   );
 
-  const handleLogout = async () => {
-    await AsyncStorage.removeItem('userToken');
-    router.push('/');
-  };
-
   const renderTransactionItem = ({ item }) => {
     return (
       <View style={globalStyles.listItem}>

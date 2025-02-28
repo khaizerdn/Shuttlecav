@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -8,53 +8,37 @@ import {
   Modal,
   StyleSheet,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { config } from './config';
 import globalStyles from './globalstyles';
 
 const ActivityLogs = () => {
   const [searchText, setSearchText] = useState('');
   const [filterType, setFilterType] = useState('Per-Trip');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const activityLogs = [
-    { id: '1', date: 'January 20, 2025', actPlateNumber: 'ABC-1234', totalClaimed: '50.00' },
-    { id: '2', date: 'January 19, 2025', actPlateNumber: 'DEF-5678', totalClaimed: '75.00' },
-    { id: '3', date: 'January 18, 2025', actPlateNumber: 'GHI-9012', totalClaimed: '100.00' },
-    { id: '4', date: 'January 17, 2025', actPlateNumber: 'JKL-3456', totalClaimed: '60.00' },
-    { id: '5', date: 'January 16, 2025', actPlateNumber: 'MNO-7890', totalClaimed: '80.00' },
-    { id: '6', date: 'January 15, 2025', actPlateNumber: 'PQR-2345', totalClaimed: '55.00' },
-    { id: '7', date: 'January 14, 2025', actPlateNumber: 'STU-6789', totalClaimed: '90.00' },
-    { id: '8', date: 'January 13, 2025', actPlateNumber: 'VWX-0123', totalClaimed: '70.00' },
-    { id: '9', date: 'January 12, 2025', actPlateNumber: 'YZA-4567', totalClaimed: '65.00' },
-    { id: '10', date: 'January 11, 2025', actPlateNumber: 'BCD-8910', totalClaimed: '85.00' },
-    { id: '11', date: 'January 10, 2025', actPlateNumber: 'EFG-2345', totalClaimed: '50.00' },
-    { id: '12', date: 'January 09, 2025', actPlateNumber: 'HIJ-6789', totalClaimed: '75.00' },
-    { id: '13', date: 'January 08, 2025', actPlateNumber: 'KLM-0123', totalClaimed: '100.00' },
-    { id: '14', date: 'January 07, 2025', actPlateNumber: 'NOP-4567', totalClaimed: '60.00' },
-    { id: '15', date: 'January 06, 2025', actPlateNumber: 'QRS-8910', totalClaimed: '80.00' },
-    { id: '16', date: 'January 05, 2025', actPlateNumber: 'TUV-2345', totalClaimed: '55.00' },
-    { id: '17', date: 'January 04, 2025', actPlateNumber: 'WXY-6789', totalClaimed: '90.00' },
-    { id: '18', date: 'January 03, 2025', actPlateNumber: 'ZAB-0123', totalClaimed: '70.00' },
-    { id: '19', date: 'January 02, 2025', actPlateNumber: 'CDE-4567', totalClaimed: '65.00' },
-    { id: '20', date: 'January 01, 2025', actPlateNumber: 'FGH-8910', totalClaimed: '85.00' },
-  ];
+  // Helper to format datetime as "January 25, 2025 at 8:34 AM"
+  const formatFullDate = (datetime) => {
+    const dateObj = new Date(datetime);
+    const datePart = dateObj.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const timePart = dateObj.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: 'numeric',
+    });
+    return `${datePart} at ${timePart}`;
+  };
 
-  // --- Helper functions for date parsing and grouping ---
-
+  // Grouping helpers for filtering (Daily, Weekly, Monthly, Yearly)
   const fullMonths = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
-
-  const parseDate = (dateStr) => {
-    const [monthName, dayWithComma, yearStr] = dateStr.split(' ');
-    const day = parseInt(dayWithComma.replace(',', ''), 10);
-    const year = parseInt(yearStr, 10);
-    const monthIndex = fullMonths.indexOf(monthName);
-    if (monthIndex === -1) {
-      return new Date(dateStr);
-    }
-    return new Date(year, monthIndex, day);
-  };
 
   const getMonthlyLabel = (dateObj) => {
     const month = fullMonths[dateObj.getMonth()];
@@ -87,29 +71,68 @@ const ActivityLogs = () => {
     return `${startLabel} - ${endLabel}`;
   };
 
-  const filteredLogs = activityLogs.filter((item) => {
+  // Fetch activity logs from the API endpoint
+  const fetchActivityLogs = async () => {
+    const token = await AsyncStorage.getItem('userToken');
+    try {
+      const response = await fetch(`${config.API_URL}/activity-logs`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Data is expected to be an array of inspection records.
+        setActivityLogs(data);
+      } else {
+        console.error('Failed to fetch activity logs');
+      }
+    } catch (error) {
+      console.error('Error fetching activity logs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchActivityLogs();
+  }, []);
+
+  // Filter logs based on search text using the formatted date, driver, or total claimed money.
+  const filteredLogs = activityLogs.filter((log) => {
     const lowerSearch = searchText.toLowerCase();
+    const formattedDate = formatFullDate(log.start_datetime);
     return (
-      item.date.toLowerCase().includes(lowerSearch) ||
-      item.actPlateNumber.toLowerCase().includes(lowerSearch) ||
-      item.totalClaimed.toLowerCase().includes(lowerSearch)
+      formattedDate.toLowerCase().includes(lowerSearch) ||
+      (log.driver && log.driver.toLowerCase().includes(lowerSearch)) ||
+      (log.total_claimed_money &&
+        log.total_claimed_money.toString().toLowerCase().includes(lowerSearch))
     );
   });
 
+  // Group logs based on the selected filter type.
+  // For "Per-Trip", include driver, plate, inspector, and now the route.
   const getFilteredLogs = () => {
     if (filterType === 'Per-Trip') {
-      return filteredLogs;
+      return filteredLogs.map(log => ({
+        id: log.id,
+        date: formatFullDate(log.start_datetime),
+        driver: log.driver,
+        plate: log.plate,
+        inspector: log.inspector_fullname,
+        // Build the route string from origin and destination.
+        route: log.origin && log.destination ? `${log.origin} to ${log.destination}` : '',
+        totalClaimed: parseFloat(log.total_claimed_money).toFixed(2)
+      }));
     }
     const groupedMap = new Map();
     filteredLogs.forEach((log) => {
-      const dateObj = parseDate(log.date);
-      const claimed = parseFloat(log.totalClaimed);
+      const dateObj = new Date(log.start_datetime);
+      const claimed = parseFloat(log.total_claimed_money);
       let groupKey = '';
       let displayDate = '';
       switch (filterType) {
         case 'Daily':
-          groupKey = log.date;
-          displayDate = log.date;
+          groupKey = formatFullDate(log.start_datetime);
+          displayDate = formatFullDate(log.start_datetime);
           break;
         case 'Weekly': {
           const temp = new Date(dateObj);
@@ -139,7 +162,11 @@ const ActivityLogs = () => {
           id: groupKey,
           date: displayDate,
           totalClaimed: claimed,
-          actPlateNumber: '',
+          // In grouped view, driver/plate/inspector/route are not applicable.
+          driver: '',
+          plate: '',
+          inspector: '',
+          route: '',
         });
       } else {
         const existing = groupedMap.get(groupKey);
@@ -158,6 +185,14 @@ const ActivityLogs = () => {
     setFilterType(type);
     setShowFilterModal(false);
   };
+
+  if (loading) {
+    return (
+      <View style={globalStyles.container}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={globalStyles.container}>
@@ -182,20 +217,24 @@ const ActivityLogs = () => {
       <View style={globalStyles.listContainer}>
         <FlatList
           data={finalLogs}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
             <View style={globalStyles.listItem}>
               <View style={globalStyles.listItemLeft}>
-                <Text style={globalStyles.listItemDate}>{item.date}</Text>
+                <Text style={globalStyles.listItemPrimary}>{item.date}</Text>
                 {filterType === 'Per-Trip' && (
-                  <Text style={globalStyles.listItemPrimary}>
-                    {item.actPlateNumber}
-                  </Text>
+                  <>
+                    <Text style={globalStyles.listItemDate}>Driver: {item.driver}</Text>
+                    <Text style={globalStyles.listItemDate}>Inspector: {item.inspector}</Text>
+                    <Text style={globalStyles.listItemDate}>Plate: {item.plate}</Text>
+                    {/* New row to display the route below the plate */}
+                    <Text style={globalStyles.listItemDate}>Route: {item.route}</Text>
+                  </>
                 )}
               </View>
               <View style={globalStyles.listItemRight}>
-                <Text style={globalStyles.listItemSecondary}>
-                  {item.totalClaimed}
+                <Text style={[globalStyles.listItemSecondary, { color: '#3578E5' }]}>
+                  + {item.totalClaimed}
                 </Text>
               </View>
             </View>
@@ -205,7 +244,7 @@ const ActivityLogs = () => {
         />
       </View>
 
-      {/* Modal for Filter Options using global modal styles */}
+      {/* Modal for Filter Options */}
       <Modal visible={showFilterModal} transparent animationType="none">
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalContainer}>
@@ -241,10 +280,12 @@ const ActivityLogs = () => {
               <Text style={globalStyles.buttonText}>Yearly</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={globalStyles.cancelButton} onPress={() => setShowFilterModal(false)}>
+            <TouchableOpacity
+              style={globalStyles.cancelButton}
+              onPress={() => setShowFilterModal(false)}
+            >
               <Text style={globalStyles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-
           </View>
         </View>
       </Modal>

@@ -231,8 +231,10 @@ export default function StartInspection() {
       return acc;
     }, {});
 
+    // Build inspection data payload.
     const inspectionData = {
       driver: driver || '',
+      plate: plate || '', // Log the plate number here in inspections table.
       route: {
         origin: origin || '',
         destination: destination || '',
@@ -256,6 +258,7 @@ export default function StartInspection() {
           tag_id: log.tagId,
           scanned_datetime: log.timestamp,
           fare: fare,
+          plate: plate || '', // Log the plate number in each inspection_log.
         };
       }),
       passengerCounts: passengerCounts,
@@ -602,6 +605,11 @@ export default function StartInspection() {
                 <Text style={styles.receiptLabel}>Driver:</Text>
                 <Text style={styles.receiptValue}>{driver || 'N/A'}</Text>
               </View>
+              {/* New row to display the plate number */}
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Plate Number:</Text>
+                <Text style={styles.receiptValue}>{inspectionOverview?.plate || 'N/A'}</Text>
+              </View>
               <View style={styles.receiptRow}>
                 <Text style={styles.receiptLabel}>Route:</Text>
                 <Text style={styles.receiptValue}>
@@ -776,5 +784,17 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 6,
     textAlign: 'center',
+  },
+  searchContainer: {
+    width: '100%',
+    marginBottom: 10,
+  },
+  searchInput: {
+    backgroundColor: '#EAEAEA',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    height: 50,
+    fontSize: 16,
+    color: '#333',
   },
 });

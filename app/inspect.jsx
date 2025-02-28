@@ -251,14 +251,14 @@ const Inspect = () => {
                       { flex: 1, marginLeft: 10 },
                     ]}
                   >
-                    <Text style={globalStyles.listItemDate}>
+                    <Text style={globalStyles.listItemPrimary}>
                       {item.origin} to {item.destination}
                     </Text>
-                    <Text style={globalStyles.listItemPrimary}>
-                      {item.shuttleDriver}
+                    <Text style={globalStyles.listItemDate}>
+                      Driver: {item.shuttleDriver}
                     </Text>
-                    <Text style={globalStyles.listItemPrimary}>
-                      {item.shuttlePlatNumber}
+                    <Text style={globalStyles.listItemDate}>
+                      Plate: {item.shuttlePlatNumber}
                     </Text>
                   </View>
                 </View>

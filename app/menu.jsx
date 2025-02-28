@@ -17,8 +17,8 @@ const Menu = () => {
       <TouchableOpacity onPress={() => router.push('/profile')}>
         <Text style={styles.menuItem}>Profile</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push('/travel-history')}>
-        <Text style={styles.menuItem}>Travel History</Text>
+      <TouchableOpacity onPress={() => router.push('/transaction-history')}>
+        <Text style={styles.menuItem}>Transaction History</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => router.push('/activity-logs')}>
         <Text style={styles.menuItem}>Activity Logs</Text>
