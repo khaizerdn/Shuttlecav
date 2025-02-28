@@ -132,7 +132,8 @@ app.get('/user', (req, res) => {
         phonenumber: user.phonenumber,
         username: user.username,
         tag_id: user.tag_id,
-        balance: user.balance  // Include the balance field here
+        balance: user.balance, // Include the balance field here
+        role: user.role      // Added: return the user's role
       });
     });
   } catch (error) {

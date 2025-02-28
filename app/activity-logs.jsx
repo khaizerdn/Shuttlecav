@@ -34,7 +34,17 @@ const ActivityLogs = () => {
     return `${datePart} at ${timePart}`;
   };
 
-  // Grouping helpers for filtering (Daily, Weekly, Monthly, Yearly)
+  // Helper to format only the date as "February 28, 2025"
+  const formatDateOnly = (datetime) => {
+    const dateObj = new Date(datetime);
+    return dateObj.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  // Grouping helpers for filtering (Weekly, Monthly, Yearly)
   const fullMonths = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -109,7 +119,7 @@ const ActivityLogs = () => {
   });
 
   // Group logs based on the selected filter type.
-  // For "Per-Trip", include driver, plate, inspector, and now the route.
+  // For "Per-Trip", include driver, plate, inspector, and route.
   const getFilteredLogs = () => {
     if (filterType === 'Per-Trip') {
       return filteredLogs.map(log => ({
@@ -131,8 +141,9 @@ const ActivityLogs = () => {
       let displayDate = '';
       switch (filterType) {
         case 'Daily':
-          groupKey = formatFullDate(log.start_datetime);
-          displayDate = formatFullDate(log.start_datetime);
+          // Use formatDateOnly for daily grouping.
+          groupKey = formatDateOnly(log.start_datetime);
+          displayDate = formatDateOnly(log.start_datetime);
           break;
         case 'Weekly': {
           const temp = new Date(dateObj);
@@ -227,7 +238,6 @@ const ActivityLogs = () => {
                     <Text style={globalStyles.listItemDate}>Driver: {item.driver}</Text>
                     <Text style={globalStyles.listItemDate}>Inspector: {item.inspector}</Text>
                     <Text style={globalStyles.listItemDate}>Plate: {item.plate}</Text>
-                    {/* New row to display the route below the plate */}
                     <Text style={globalStyles.listItemDate}>Route: {item.route}</Text>
                   </>
                 )}
