@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { config } from './config';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import globalStyles from './globalstyles';
 
 const Menu = () => {
   const router = useRouter();
   const [role, setRole] = useState(null);
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -31,9 +34,25 @@ const Menu = () => {
     fetchUserInfo();
   }, []);
 
+  const navigation = useNavigation();
+
   const handleLogout = async () => {
     await AsyncStorage.removeItem('userToken');
-    router.push('/login');
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'index' }], // 'index' is your login screen
+      })
+    );
+  };
+
+  const onCancel = () => {
+    setIsLogoutModalVisible(false);
+  };
+
+  const onConfirm = () => {
+    setIsLogoutModalVisible(false);
+    handleLogout();
   };
 
   return (
@@ -73,16 +92,39 @@ const Menu = () => {
           <TouchableOpacity onPress={() => router.push('/inspection-logs')}>
             <Text style={styles.menuItem}>Inspection Logs</Text>
           </TouchableOpacity>
-          {/* You can add additional admin-specific menu items here */}
         </>
       )}
 
-      {/* For users with no role (NULL) only Profile, Transaction History, and Logout are shown */}
-
       {/* Logout is always available */}
-      <TouchableOpacity onPress={handleLogout}>
+      <TouchableOpacity onPress={() => setIsLogoutModalVisible(true)}>
         <Text style={styles.menuItem}>Logout</Text>
       </TouchableOpacity>
+
+      {/* Logout Confirmation Modal */}
+      <Modal visible={isLogoutModalVisible} animationType="none" transparent>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalContainer}>
+            <Text style={globalStyles.modalTitle}>Confirm Logout</Text>
+            <Text style={globalStyles.modalText}>
+              Are you sure you want to log out?
+            </Text>
+            <View style={globalStyles.modalButtons}>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]}
+                onPress={onCancel}
+              >
+                <Text style={globalStyles.actionButtonText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#3578E5' }]}
+                onPress={onConfirm}
+              >
+                <Text style={globalStyles.actionButtonText}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };

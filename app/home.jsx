@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Image, FlatList, Dimensions } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, TouchableOpacity, Image, FlatList, Dimensions, Modal } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import globalStyles from './globalstyles';
 import { config } from './config';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
@@ -11,10 +12,12 @@ const Home = () => {
   const [firstname, setFirstname] = useState('');
   const [surname, setSurname] = useState('');
   const [balance, setBalance] = useState(0);
-  const [transactionHistory, setTransactionHistory] = useState([]); // Logs state
+  const [transactionHistory, setTransactionHistory] = useState([]);
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const router = useRouter();
+  const navigation = useNavigation();
+  const allowNavigationRef = useRef(false); // Use ref to track navigation allowance
 
-  // Helper: format MySQL datetime string to "January 25, 2025 at 8:13am"
   const formatDatetime = (datetimeStr) => {
     const date = new Date(datetimeStr.replace(' ', 'T'));
     const options = { month: 'long', day: 'numeric', year: 'numeric' };
@@ -22,8 +25,7 @@ const Home = () => {
     let hours = date.getHours();
     const minutes = date.getMinutes();
     const ampm = hours >= 12 ? 'pm' : 'am';
-    hours = hours % 12;
-    if (hours === 0) hours = 12;
+    hours = hours % 12 || 12;
     const minutesFormatted = minutes < 10 ? '0' + minutes : minutes;
     return `${datePart} at ${hours}:${minutesFormatted}${ampm}`;
   };
@@ -65,7 +67,6 @@ const Home = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        // Expecting data to be an array of logs from inspection_logs.
         setTransactionHistory(data);
       } else {
         console.error('Failed to fetch transaction history:', response.status);
@@ -75,35 +76,65 @@ const Home = () => {
     }
   };
 
-  // useFocusEffect triggers on screen focus so that the info is always up to date.
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('userToken');
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'index' }],
+      })
+    );
+  };
+
+  const onCancel = () => {
+    setIsLogoutModalVisible(false);
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchUserInfo();
       fetchTransactionHistory();
-    }, [])
+
+      allowNavigationRef.current = false; // Reset on focus
+
+      const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+        if (allowNavigationRef.current) return; // Allow navigation if confirmed
+        e.preventDefault();
+        setIsLogoutModalVisible(true);
+      });
+
+      return () => {
+        unsubscribe();
+      };
+    }, [navigation])
   );
 
-  const renderTransactionItem = ({ item }) => {
-    return (
-      <View style={globalStyles.listItem}>
-        <View style={globalStyles.listItemLeft}>
-          <Text style={globalStyles.listItemDate}>{formatDatetime(item.scanned_datetime)}</Text>
-          <Text style={globalStyles.listItemPrimary}>
-            {item.origin} to {item.destination}
-          </Text>
-        </View>
-        <View style={globalStyles.listItemRight}>
-            <Text style={[globalStyles.listLeftBoxPrimaryText, { color: '#e74c3c' }]}>
-            - {parseFloat(item.fare).toFixed(2)}
-            </Text>
-        </View>
+  // Custom confirm handler to match Menu flow and allow navigation
+  const handleConfirmLogout = async () => {
+    setIsLogoutModalVisible(false);
+    await handleLogout();
+    allowNavigationRef.current = true; // Allow navigation after logout
+    navigation.goBack(); // Trigger back navigation to complete the flow
+  };
+
+  const renderTransactionItem = ({ item }) => (
+    <View style={globalStyles.listItem}>
+      <View style={globalStyles.listItemLeft}>
+        <Text style={globalStyles.listItemDate}>{formatDatetime(item.scanned_datetime)}</Text>
+        <Text style={globalStyles.listItemPrimary}>
+          {item.origin} to {item.destination}
+        </Text>
       </View>
-    );
-  };  
+      <View style={globalStyles.listItemRight}>
+        <Text style={[globalStyles.listLeftBoxPrimaryText, { color: '#e74c3c' }]}>
+          - {parseFloat(item.fare).toFixed(2)}
+        </Text>
+      </View>
+    </View>
+  );
 
   return (
     <View style={globalStyles.container}>
-      {/* Profile Section */}
       <View style={localStyles.profileSection}>
         <Image source={require('../assets/images/user-icon.png')} style={localStyles.profileImage} />
         <View>
@@ -111,14 +142,10 @@ const Home = () => {
           <Text style={localStyles.welcomeText}>{firstname} {surname}!</Text>
         </View>
       </View>
-
-      {/* Balance Section */}
       <View style={localStyles.balanceContainer}>
         <Text style={localStyles.balanceLabel}>Available Balance:</Text>
         <Text style={localStyles.balanceAmount}>PHP {balance.toFixed(2)}</Text>
       </View>
-
-      {/* Transaction History Section */}
       <View style={globalStyles.listContainer}>
         <View style={globalStyles.sectionTitleContainer}>
           <Text style={globalStyles.sectionTitle}>Transaction History:</Text>
@@ -131,6 +158,30 @@ const Home = () => {
           showsVerticalScrollIndicator={false}
         />
       </View>
+      <Modal visible={isLogoutModalVisible} animationType="none" transparent>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalContainer}>
+            <Text style={globalStyles.modalTitle}>Confirm Logout</Text>
+            <Text style={globalStyles.modalText}>
+              Are you sure you want to log out?
+            </Text>
+            <View style={globalStyles.modalButtons}>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]}
+                onPress={onCancel}
+              >
+                <Text style={globalStyles.actionButtonText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#3578E5' }]}
+                onPress={handleConfirmLogout} // Use custom handler here
+              >
+                <Text style={globalStyles.actionButtonText}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
