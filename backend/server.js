@@ -66,6 +66,24 @@ app.post('/signup', (req, res) => {
   });
 });
 
+app.post('/check-username', (req, res) => {
+  const { username } = req.body;
+  if (!username) {
+    return res.status(400).json({ exists: false, message: 'Username is required' });
+  }
+  const query = 'SELECT COUNT(*) as count FROM users WHERE username = ?';
+  
+  db.query(query, [username], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ exists: false, message: 'Database error' });
+    }
+    const exists = results[0].count > 0;
+    console.log(`Checking username: ${username}, Exists: ${exists}`);
+    res.status(200).json({ exists });
+  });
+});
+
 // Login Route
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
