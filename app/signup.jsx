@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { config } from './config';
 import globalStyles from './globalstyles';
-import { Ionicons } from '@expo/vector-icons'; // Import Ionicons
+import { Ionicons } from '@expo/vector-icons';
 
 const SignUp = () => {
   const [surname, setSurname] = useState('');
@@ -18,41 +18,52 @@ const SignUp = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [focusedField, setFocusedField] = useState(null);
-  const [showPassword, setShowPassword] = useState(false); // State for password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const checkUsername = async () => {
-      if (username.length < 8) {
-        setErrors((prev) => ({ ...prev, username: 'Must be at least 8 characters' }));
-        return;
-      }
-      if (!/^[a-z0-9]+$/.test(username)) {
-        setErrors((prev) => ({
-          ...prev,
-          username: 'Must contain only small letters and numbers (no special characters)',
-        }));
-        return;
-      }
-      try {
-        const response = await axios.post(`${config.API_URL}/check-username`, { username });
-        console.log('Username check response:', response.data);
-        setErrors((prev) => ({
-          ...prev,
-          username: response.data.exists ? 'Username is already taken' : '',
-        }));
-      } catch (error) {
-        console.error('Username check failed:', error.response?.data || error.message);
-        setErrors((prev) => ({ ...prev, username: 'Error checking username, try again later' }));
-      }
-    };
+  // Immediate username validation (length and format)
+  const validateUsernameImmediate = (value) => {
+    if (!value) return ''; // No error if empty (optional field until required)
+    if (value.length < 8) {
+      return 'Must be at least 8 characters';
+    }
+    if (!/^[a-z0-9]+$/.test(value)) {
+      return 'Must contain only small letters and numbers (no special characters)';
+    }
+    return ''; // No error if valid
+  };
 
-    const timer = setTimeout(() => {
-      if (username) checkUsername();
-    }, 500);
+  // Database check for username duplication
+  const checkUsernameDuplication = async (value) => {
+    try {
+      const response = await axios.post(`${config.API_URL}/check-username`, { username: value });
+      console.log('Username check response:', response.data);
+      setErrors((prev) => ({
+        ...prev,
+        username: response.data.exists ? 'Username is already taken' : '',
+      }));
+    } catch (error) {
+      console.error('Username check failed:', error.response?.data || error.message);
+      setErrors((prev) => ({ ...prev, username: 'Error checking username, try again later' }));
+    }
+  };
 
-    return () => clearTimeout(timer);
-  }, [username]);
+  // Handle username change with immediate validation
+  const handleUsernameChange = (value) => {
+    setUsername(value);
+    const error = validateUsernameImmediate(value);
+    setErrors((prev) => ({ ...prev, username: error }));
+  };
+
+  // Handle username blur for database check
+  const handleUsernameBlur = () => {
+    setFocusedField(null);
+    const immediateError = validateUsernameImmediate(username);
+    if (username && !immediateError) { // Check DB only if no immediate error
+      checkUsernameDuplication(username);
+    }
+  };
 
   const capitalizeWords = (str) =>
     str
@@ -189,7 +200,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.surname && focusedField === 'surname' && (
-          <Text style={globalglobalStyles.inputErrorText}>{errors.surname}</Text>
+          <Text style={styles.errorText}>{errors.surname}</Text>
         )}
 
         <TextInput
@@ -204,7 +215,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.firstname && focusedField === 'firstname' && (
-          <Text style={globalglobalStyles.inputErrorText}>{errors.firstname}</Text>
+          <Text style={styles.errorText}>{errors.firstname}</Text>
         )}
 
         <TextInput
@@ -219,7 +230,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.middleinitial && focusedField === 'middleinitial' && (
-          <Text style={globalStyles.inputErrorText}>{errors.middleinitial}</Text>
+          <Text style={styles.errorText}>{errors.middleinitial}</Text>
         )}
 
         <TextInput
@@ -235,7 +246,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.age && focusedField === 'age' && (
-          <Text style={globalStyles.inputErrorText}>{errors.age}</Text>
+          <Text style={styles.errorText}>{errors.age}</Text>
         )}
 
         <TextInput
@@ -250,7 +261,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.gender && focusedField === 'gender' && (
-          <Text style={globalStyles.inputErrorText}>{errors.gender}</Text>
+          <Text style={styles.errorText}>{errors.gender}</Text>
         )}
 
         <TextInput
@@ -266,7 +277,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.phonenumber && focusedField === 'phonenumber' && (
-          <Text style={globalStyles.inputErrorText}>{errors.phonenumber}</Text>
+          <Text style={styles.errorText}>{errors.phonenumber}</Text>
         )}
 
         <TextInput
@@ -276,12 +287,12 @@ const SignUp = () => {
           ]}
           placeholder="Username"
           value={username}
-          onChangeText={setUsername}
+          onChangeText={handleUsernameChange}
           onFocus={() => setFocusedField('username')}
-          onBlur={() => setFocusedField(null)}
+          onBlur={handleUsernameBlur}
         />
         {errors.username && focusedField === 'username' && (
-          <Text style={globalStyles.inputErrorText}>{errors.username}</Text>
+          <Text style={styles.errorText}>{errors.username}</Text>
         )}
 
         <View style={styles.inputContainer}>
@@ -292,7 +303,7 @@ const SignUp = () => {
               errors.password && { borderColor: 'red', borderWidth: 1 },
             ]}
             placeholder="Password"
-            secureTextEntry={!showPassword} // Toggle visibility
+            secureTextEntry={!showPassword}
             value={password}
             onChangeText={(text) => handleInputChange('password', text, setPassword)}
             onFocus={() => setFocusedField('password')}
@@ -310,20 +321,35 @@ const SignUp = () => {
           </TouchableOpacity>
         </View>
         {errors.password && focusedField === 'password' && (
-          <Text style={globalStyles.inputErrorText}>{errors.password}</Text>
+          <Text style={styles.errorText}>{errors.password}</Text>
         )}
 
-        <TextInput
-          style={globalStyles.listItem}
-          placeholder="Confirm Password"
-          secureTextEntry
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          onFocus={() => setFocusedField('confirmPassword')}
-          onBlur={() => setFocusedField(null)}
-        />
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={[
+              globalStyles.listItem,
+              styles.passwordInput,
+            ]}
+            placeholder="Confirm Password"
+            secureTextEntry={!showConfirmPassword}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            onFocus={() => setFocusedField('confirmPassword')}
+            onBlur={() => setFocusedField(null)}
+          />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            <Ionicons
+              name={showConfirmPassword ? 'eye-off' : 'eye'}
+              size={24}
+              color={password !== confirmPassword && confirmPassword ? 'red' : '#666'}
+            />
+          </TouchableOpacity>
+        </View>
         {password !== confirmPassword && focusedField === 'confirmPassword' && (
-          <Text style={globalStyles.inputErrorText}>Passwords do not match</Text>
+          <Text style={styles.errorText}>Passwords do not match</Text>
         )}
 
         <TouchableOpacity
@@ -342,21 +368,27 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFF',
   },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginBottom: 10,
+    marginLeft: 10,
+  },
   disabledButton: {
     backgroundColor: '#A9A9A9',
   },
   inputContainer: {
-    position: 'relative', // For absolute positioning of the icon
+    position: 'relative',
     width: '100%',
   },
   passwordInput: {
-    paddingRight: 40, // Space for the icon
+    paddingRight: 40,
   },
   eyeIcon: {
     position: 'absolute',
     right: 10,
     top: '50%',
-    transform: [{ translateY: -12 }], // Center vertically (half of icon size)
+    transform: [{ translateY: -12 }],
   },
 });
 

@@ -21,6 +21,7 @@ Soon:
 - Have a pull to refresh in the pages or logs.
 - Add lazy loading for effiecient browsing. Especially for logs.
 - In signup, it should check only after typing the username and not every type of the user.
+- Check what is the notification if a user has no NFC feature on device but trying to click the Yes button for confirming enabling the NFC.
 
 Done:
 - Sign up validations.
