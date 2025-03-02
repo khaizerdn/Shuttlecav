@@ -25,6 +25,12 @@ const globalStyles = StyleSheet.create({
     color: '#333',
     justifyContent: 'center',
   },
+  inputErrorText: {
+    color: 'red',
+    fontSize: 16,
+    marginBottom: 10,
+    marginLeft: 10,
+  },
   button: {
     width: '100%',
     height: 50,

@@ -189,7 +189,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.surname && focusedField === 'surname' && (
-          <Text style={styles.errorText}>{errors.surname}</Text>
+          <Text style={globalglobalStyles.inputErrorText}>{errors.surname}</Text>
         )}
 
         <TextInput
@@ -204,7 +204,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.firstname && focusedField === 'firstname' && (
-          <Text style={styles.errorText}>{errors.firstname}</Text>
+          <Text style={globalglobalStyles.inputErrorText}>{errors.firstname}</Text>
         )}
 
         <TextInput
@@ -219,7 +219,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.middleinitial && focusedField === 'middleinitial' && (
-          <Text style={styles.errorText}>{errors.middleinitial}</Text>
+          <Text style={globalStyles.inputErrorText}>{errors.middleinitial}</Text>
         )}
 
         <TextInput
@@ -235,7 +235,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.age && focusedField === 'age' && (
-          <Text style={styles.errorText}>{errors.age}</Text>
+          <Text style={globalStyles.inputErrorText}>{errors.age}</Text>
         )}
 
         <TextInput
@@ -250,7 +250,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.gender && focusedField === 'gender' && (
-          <Text style={styles.errorText}>{errors.gender}</Text>
+          <Text style={globalStyles.inputErrorText}>{errors.gender}</Text>
         )}
 
         <TextInput
@@ -266,7 +266,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.phonenumber && focusedField === 'phonenumber' && (
-          <Text style={styles.errorText}>{errors.phonenumber}</Text>
+          <Text style={globalStyles.inputErrorText}>{errors.phonenumber}</Text>
         )}
 
         <TextInput
@@ -281,7 +281,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {errors.username && focusedField === 'username' && (
-          <Text style={styles.errorText}>{errors.username}</Text>
+          <Text style={globalStyles.inputErrorText}>{errors.username}</Text>
         )}
 
         <View style={styles.inputContainer}>
@@ -310,7 +310,7 @@ const SignUp = () => {
           </TouchableOpacity>
         </View>
         {errors.password && focusedField === 'password' && (
-          <Text style={styles.errorText}>{errors.password}</Text>
+          <Text style={globalStyles.inputErrorText}>{errors.password}</Text>
         )}
 
         <TextInput
@@ -323,7 +323,7 @@ const SignUp = () => {
           onBlur={() => setFocusedField(null)}
         />
         {password !== confirmPassword && focusedField === 'confirmPassword' && (
-          <Text style={styles.errorText}>Passwords do not match</Text>
+          <Text style={globalStyles.inputErrorText}>Passwords do not match</Text>
         )}
 
         <TouchableOpacity
@@ -341,12 +341,6 @@ const SignUp = () => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFF',
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 12,
-    marginBottom: 10,
-    marginLeft: 10,
   },
   disabledButton: {
     backgroundColor: '#A9A9A9',

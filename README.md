@@ -19,5 +19,10 @@ Soon:
 - Add forgot password functionality.
 - Email registration. This is essential for forgot password functionality.
 - Have a pull to refresh in the pages or logs.
-- Sign up validations.
 - Add lazy loading for effiecient browsing. Especially for logs.
+- In signup, it should check only after typing the username and not every type of the user.
+
+Done:
+- Sign up validations.
+
+
