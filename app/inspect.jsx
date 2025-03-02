@@ -434,7 +434,7 @@ const Inspect = () => {
       </Modal>
 
       {/* Route Selection Modal */}
-      <Modal visible={showRouteModal} animationType="fade" transparent={false}>
+      <Modal visible={showRouteModal} animationType="none" transparent={false}>
         <ScrollView>
           <View style={globalStyles.modalOverlay}>
             <View style={globalStyles.modalContainer}>

@@ -486,7 +486,7 @@ export default function StartInspection() {
       </Modal>
 
       {/* Passenger Counts Modal */}
-      <Modal visible={showCountsModal} animationType="slide" transparent={true}>
+      <Modal visible={showCountsModal} animationType="none" transparent={true}>
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Number of Passengers</Text>
