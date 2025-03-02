@@ -17,7 +17,7 @@ const globalStyles = StyleSheet.create({
   input: {
     width: '100%',
     height: 50,
-    backgroundColor: '#EAEAEA',
+    backgroundColor: '#F2F2F2',
     borderRadius: 10,
     paddingHorizontal: 15,
     marginBottom: 15,
@@ -69,16 +69,16 @@ const globalStyles = StyleSheet.create({
   // Updated delete button style with fixed width
   redListButton: {
     padding: 10,
-    backgroundColor: '#e74c3c', // Blue color matching globalStyles.button
+    backgroundColor: '#e74c3c',
     borderRadius: 5,
-    width: 60, // Fixed width to prevent stretching
+    minWidth: 60, // Minimum width of 60
     alignItems: 'center', // Center the text horizontally
   },
   blueListButton: {
     padding: 10,
-    backgroundColor: '#3578E5', // Blue color matching globalStyles.button
+    backgroundColor: '#3578E5',
     borderRadius: 5,
-    width: 60, // Fixed width to prevent stretching
+    minWidth: 60, // Minimum width of 60
     alignItems: 'center', // Center the text horizontally
   },
   listButtonText: {
@@ -93,7 +93,7 @@ const globalStyles = StyleSheet.create({
   },
   listItem: {
     width: '100%',
-    backgroundColor: '#EAEAEA',
+    backgroundColor: '#F2F2F2',
     padding: 10,
     borderRadius: 10,
     marginBottom: 10,
@@ -112,7 +112,7 @@ const globalStyles = StyleSheet.create({
   listLeftBox: {
     width: 60,
     height: 60,
-    backgroundColor: '#D3D3D3',
+    backgroundColor: '#E5E5E5',
     borderRadius: 5,
     justifyContent: 'center',
     alignItems: 'center',
@@ -221,7 +221,7 @@ const globalStyles = StyleSheet.create({
   separator: {
     width: '100%',
     height: 1,
-    backgroundColor: '#EAEAEA',
+    backgroundColor: '#F2F2F2',
     marginVertical: 10,
   },
 });

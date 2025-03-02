@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   summaryItem: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#EAEAEA',
+    backgroundColor: '#F2F2F2',
     height: 60,
     borderRadius: 10,
     justifyContent: 'center',
