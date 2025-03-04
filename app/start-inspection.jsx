@@ -491,20 +491,33 @@ export default function StartInspection() {
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Number of Passengers</Text>
             {scannedPassengerTypes.length > 0 ? (
-              scannedPassengerTypes.map(item => (
-                <View key={item.id} style={globalStyles.listItem}>
-                  <View style={styles.leftContainer}>
-                    <View style={styles.countContainer}>
-                      <Text style={styles.countText}>
-                        {passengerCounts[item.passenger_type]}
+              scannedPassengerTypes.map(item => {
+                const passengerRate = parseFloat(item.passenger_rate);
+                const fare = passengerRate + routeAddedRate;
+                return (
+                  <View key={item.id} style={globalStyles.listItem}>
+                    <View style={globalStyles.listItemLeftRow}>
+                      {/* New listLeftBox for Current Rate */}
+                      <View style={[globalStyles.listLeftBox, { marginRight: 10 }]}>
+                        <Text style={globalStyles.listLeftBoxSecondaryText}>Rate</Text>
+                        <Text style={globalStyles.listLeftBoxPrimaryText}>
+                          {fare.toFixed(2)}
+                        </Text>
+                      </View>
+                      {/* Existing listLeftBox for No. of Passengers */}
+                      <View style={[globalStyles.listLeftBox, { marginRight: 10 }]}>
+                        <Text style={globalStyles.listLeftBoxSecondaryText}>Count</Text>
+                        <Text style={globalStyles.listLeftBoxPrimaryText}>
+                          {passengerCounts[item.passenger_type]}
+                        </Text>
+                      </View>
+                      <Text style={[globalStyles.listItemPrimary, { marginLeft: 10 }]}>
+                        {item.passenger_type}
                       </Text>
                     </View>
-                    <Text style={[globalStyles.listItemPrimary, { marginLeft: 10 }]}>
-                      {item.passenger_type}
-                    </Text>
                   </View>
-                </View>
-              ))
+                );
+              })
             ) : (
               <Text style={styles.logsPlaceholder}>No passengers scanned.</Text>
             )}
@@ -706,23 +719,6 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 24,
     lineHeight: 24,
-  },
-  leftContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  countContainer: {
-    backgroundColor: '#D3D3D3',
-    borderRadius: 5,
-    padding: 10,
-    width: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  countText: {
-    color: '#000',
-    fontSize: 16,
-    textAlign: 'center',
   },
   // Wrapper to contain the receipt container and the outside button.
   receiptWrapper: {
