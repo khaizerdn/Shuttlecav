@@ -422,8 +422,8 @@ const AdminPanel = () => {
   // Filter users based on search query (no additional role or ID filtering needed here)
   const filteredUsers = users.filter(user => {
     const fullName = `${user.surname || ''}, ${user.firstname || ''} ${user.middleinitial || ''}`.trim();
-    return fullName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-           (user.username || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.username || '').toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   return (
@@ -747,7 +747,21 @@ const AdminPanel = () => {
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalContainer}>
             <Text style={globalStyles.modalTitle}>Confirm</Text>
-            <Text>Are you sure you want to assign the inspector role to {selectedUser?.username}?</Text>
+            {selectedUser && (
+              <>
+                <Text style={globalStyles.modalText}>
+                  Are you sure you want to assign the inspector role to the following user?
+                </Text>
+                  <View style={globalStyles.listItem}>
+                    <View style={globalStyles.listItemLeft}>
+                      <Text style={globalStyles.listItemDate}>{selectedUser.id}</Text>
+                      <Text style={globalStyles.listItemPrimary}>
+                        {`${selectedUser.surname || ''}, ${selectedUser.firstname || ''} ${selectedUser.middleinitial || ''}`.trim()}
+                      </Text>
+                    </View>
+                  </View>
+              </>
+            )}
             <View style={globalStyles.modalButtons}>
               <TouchableOpacity
                 style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]}
