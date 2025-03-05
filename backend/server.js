@@ -760,6 +760,115 @@ app.put('/users/:id/role', authenticateToken, (req, res) => {
   });
 });
 
+// API Endpoint: GET /inspection-logs
+app.get('/inspection-logs', authenticateToken, (req, res) => {
+  const inspectorId = req.user.userId;
+  const query = `
+    SELECT id, start_datetime, driver, plate, total_claimed_money, origin, destination
+    FROM inspections
+    WHERE inspector_id = ?
+    ORDER BY start_datetime DESC
+  `;
+  db.query(query, [inspectorId], (err, results) => {
+    if (err) {
+      console.error('Error fetching inspection logs:', err);
+      return res.status(500).json({ message: 'Error fetching inspection logs' });
+    }
+    return res.status(200).json(results);
+  });
+});
+
+// New API Endpoint: GET /inspections/:id
+app.get('/inspections/:id', authenticateToken, (req, res) => {
+  const inspectorId = req.user.userId;
+  const inspectionId = req.params.id;
+
+  // Fetch inspection details
+  const inspectionQuery = `
+    SELECT 
+      i.id AS inspectionId, 
+      i.inspector_fullname AS inspector, 
+      i.driver, 
+      i.plate, 
+      i.origin, 
+      i.destination, 
+      i.added_rate, 
+      i.start_datetime, 
+      i.end_datetime, 
+      i.total_passengers, 
+      i.total_claimed_money
+    FROM inspections i
+    WHERE i.id = ? AND i.inspector_id = ?
+  `;
+
+  db.query(inspectionQuery, [inspectionId, inspectorId], (err, inspectionResults) => {
+    if (err) {
+      console.error('Error fetching inspection:', err);
+      return res.status(500).json({ message: 'Error fetching inspection' });
+    }
+    if (inspectionResults.length === 0) {
+      return res.status(404).json({ message: 'Inspection not found or unauthorized' });
+    }
+
+    const inspection = inspectionResults[0];
+
+    // Fetch associated logs
+    const logsQuery = `
+      SELECT passenger_type, fare
+      FROM inspection_logs
+      WHERE inspection_id = ?
+    `;
+    db.query(logsQuery, [inspectionId], (err, logsResults) => {
+      if (err) {
+        console.error('Error fetching inspection logs:', err);
+        return res.status(500).json({ message: 'Error fetching inspection logs' });
+      }
+
+      // Compute passengerCounts
+      const passengerCounts = logsResults.reduce((acc, log) => {
+        acc[log.passenger_type] = (acc[log.passenger_type] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Fetch current passenger types and rates
+      const passengerTypesQuery = 'SELECT passenger_type, passenger_rate FROM passenger_types';
+      db.query(passengerTypesQuery, (err, passengerTypesResults) => {
+        if (err) {
+          console.error('Error fetching passenger types:', err);
+          return res.status(500).json({ message: 'Error fetching passenger types' });
+        }
+
+        const routeAddedRate = parseFloat(inspection.added_rate) || 0;
+        const currentFareRates = passengerTypesResults.map(pt => ({
+          passenger_type: pt.passenger_type,
+          current_fare_rate: parseFloat(pt.passenger_rate) + routeAddedRate,
+        }));
+
+        // Construct response matching start-inspection.jsx structure
+        const responseData = {
+          inspectionId: inspection.inspectionId,
+          inspector: inspection.inspector,
+          driver: inspection.driver,
+          plate: inspection.plate,
+          route: {
+            origin: inspection.origin,
+            destination: inspection.destination,
+            added_rate: inspection.added_rate,
+          },
+          start_datetime: inspection.start_datetime,
+          end_datetime: inspection.end_datetime,
+          total_passengers: inspection.total_passengers,
+          total_claimed_money: inspection.total_claimed_money,
+          passengerCounts: passengerCounts,
+          currentFareRates: currentFareRates,
+        };
+
+        return res.status(200).json(responseData);
+      });
+    });
+  });
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
