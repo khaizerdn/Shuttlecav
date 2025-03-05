@@ -1,5 +1,6 @@
+// start-inspection.jsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import globalStyles from './globalstyles';
@@ -234,7 +235,7 @@ export default function StartInspection() {
     // Build inspection data payload.
     const inspectionData = {
       driver: driver || '',
-      plate: plate || '', // Log the plate number here in inspections table.
+      plate: plate || '',
       route: {
         origin: origin || '',
         destination: destination || '',
@@ -258,7 +259,7 @@ export default function StartInspection() {
           tag_id: log.tagId,
           scanned_datetime: log.timestamp,
           fare: fare,
-          plate: plate || '', // Log the plate number in each inspection_log.
+          plate: plate || '',
         };
       }),
       passengerCounts: passengerCounts,
@@ -269,7 +270,6 @@ export default function StartInspection() {
       passenger_type: item.passenger_type,
       current_fare_rate: parseFloat(item.passenger_rate) + routeAddedRate,
     }));
-    // The inspector name comes from the /user endpoint.
     inspectionData.inspector = inspectorName;
     inspectionData.currentFareRates = currentFareRates;
 
@@ -285,11 +285,9 @@ export default function StartInspection() {
       });
       if (response.ok) {
         const resData = await response.json();
-        // Expect the backend to return the generated inspectionId.
         inspectionData.inspectionId = resData.inspectionId;
         setInspectionOverview(inspectionData);
         setShowInspectionOverviewModal(true);
-        // Clear stored state.
         await AsyncStorage.removeItem(inspectionKey);
         await AsyncStorage.removeItem(logsKey);
         setStartTime(null);
@@ -497,14 +495,12 @@ export default function StartInspection() {
                 return (
                   <View key={item.id} style={globalStyles.listItem}>
                     <View style={globalStyles.listItemLeftRow}>
-                      {/* New listLeftBox for Current Rate */}
                       <View style={[globalStyles.listLeftBox, { marginRight: 10 }]}>
                         <Text style={globalStyles.listLeftBoxSecondaryText}>Rate</Text>
                         <Text style={globalStyles.listLeftBoxPrimaryText}>
                           {fare.toFixed(2)}
                         </Text>
                       </View>
-                      {/* Existing listLeftBox for No. of Passengers */}
                       <View style={[globalStyles.listLeftBox, { marginRight: 10 }]}>
                         <Text style={globalStyles.listLeftBoxSecondaryText}>Count</Text>
                         <Text style={globalStyles.listLeftBoxPrimaryText}>
@@ -619,7 +615,6 @@ export default function StartInspection() {
                   <Text style={styles.receiptLabel}>Driver:</Text>
                   <Text style={styles.receiptValue}>{driver || 'N/A'}</Text>
                 </View>
-                {/* New row to display the plate number */}
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Plate Number:</Text>
                   <Text style={styles.receiptValue}>{inspectionOverview?.plate || 'N/A'}</Text>
@@ -641,6 +636,10 @@ export default function StartInspection() {
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Total Money:</Text>
                   <Text style={styles.receiptValue}>PHP {inspectionOverview?.total_claimed_money.toFixed(2)}</Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Start Date:</Text>
+                  <Text style={styles.receiptValue}>{formatDatetime(inspectionOverview?.start_datetime)}</Text>
                 </View>
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>End Date:</Text>
@@ -722,13 +721,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 24,
   },
-  // Wrapper to contain the receipt container and the outside button.
   receiptWrapper: {
     width: '90%',
     alignSelf: 'center',
     alignItems: 'stretch',
   },
-  // Receipt container with border and padding.
   receiptContainer: {
     padding: 20,
     borderWidth: 1,
@@ -737,33 +734,28 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: '100%',
   },
-  // Button placed outside the bordered container.
   outsideButton: {
     marginTop: 10,
     alignSelf: 'center',
     width: '100%',
   },
-  // Receipt title centered at the top.
   receiptTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 10,
   },
-  // Each row is a two-column layout.
   receiptRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginVertical: 4,
   },
-  // Fixed width for labels to ensure vertical alignment.
   receiptLabel: {
     fontSize: 16,
     color: '#555',
     textAlign: 'left',
     width: 130,
   },
-  // The value occupies the remaining space and is right aligned.
   receiptValue: {
     fontSize: 16,
     fontWeight: 'bold',

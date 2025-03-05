@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Modal,
   StyleSheet,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { config } from './config';
@@ -325,8 +326,9 @@ const ActivityLogs = () => {
         </View>
       </Modal>
 
-      {/* Inspection Overview (Receipt) Modal - Exact copy from start-inspection.jsx */}
+      {/* Inspection Overview (Receipt) Modal */}
       <Modal visible={showInspectionOverviewModal} animationType="slide" transparent={true}>
+        <ScrollView>
         <View style={globalStyles.modalOverlay}>
           <View style={styles.receiptWrapper}>
             <View style={[globalStyles.modalContainer, styles.receiptContainer]}>
@@ -381,6 +383,12 @@ const ActivityLogs = () => {
                 </Text>
               </View>
               <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Start Date:</Text>
+                <Text style={styles.receiptValue}>
+                  {formatFullDate(inspectionOverview?.start_datetime)}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
                 <Text style={styles.receiptLabel}>End Date:</Text>
                 <Text style={styles.receiptValue}>
                   {inspectionOverview?.end_datetime
@@ -425,6 +433,7 @@ const ActivityLogs = () => {
             </TouchableOpacity>
           </View>
         </View>
+        </ScrollView>
       </Modal>
     </View>
   );
@@ -461,7 +470,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  // Styles copied from start-inspection.jsx for the receipt modal
   receiptWrapper: {
     width: '90%',
     alignSelf: 'center',

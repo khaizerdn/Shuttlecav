@@ -143,7 +143,7 @@ const InspectionLogs = () => {
         />
       </View>
 
-      {/* Inspection Overview (Receipt) Modal - Exact copy from start-inspection.jsx */}
+      {/* Inspection Overview (Receipt) Modal */}
       <Modal visible={showInspectionOverviewModal} animationType="slide" transparent={true}>
         <ScrollView>
           <View style={globalStyles.modalOverlay}>
@@ -200,6 +200,12 @@ const InspectionLogs = () => {
                   </Text>
                 </View>
                 <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Start Date:</Text>
+                  <Text style={styles.receiptValue}>
+                    {formatDate(inspectionOverview?.start_datetime)}
+                  </Text>
+                </View>
+                <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>End Date:</Text>
                   <Text style={styles.receiptValue}>
                     {inspectionOverview?.end_datetime
@@ -243,7 +249,6 @@ const InspectionLogs = () => {
                 <Text style={globalStyles.buttonText}>Close</Text>
               </TouchableOpacity>
             </View>
-
           </View>
         </ScrollView>
       </Modal>
@@ -264,7 +269,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  // Exact styles copied from start-inspection.jsx for the receipt modal
   receiptWrapper: {
     width: '90%',
     alignSelf: 'center',
