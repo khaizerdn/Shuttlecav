@@ -1,12 +1,11 @@
+// home.jsx
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image, FlatList, Dimensions, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, RefreshControl, Modal } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import globalStyles from './globalstyles';
 import { config } from './config';
 import { useNavigation, CommonActions } from '@react-navigation/native';
-
-const { width } = Dimensions.get('window');
 
 const Home = () => {
   const [firstname, setFirstname] = useState('');
@@ -14,9 +13,10 @@ const Home = () => {
   const [balance, setBalance] = useState(0);
   const [transactionHistory, setTransactionHistory] = useState([]);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const navigation = useNavigation();
-  const allowNavigationRef = useRef(false); // Use ref to track navigation allowance
+  const allowNavigationRef = useRef(false);
 
   const formatDatetime = (datetimeStr) => {
     const date = new Date(datetimeStr.replace(' ', 'T'));
@@ -67,7 +67,7 @@ const Home = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setTransactionHistory(data);
+        setTransactionHistory(data.slice(0, 10));
       } else {
         console.error('Failed to fetch transaction history:', response.status);
       }
@@ -90,15 +90,21 @@ const Home = () => {
     setIsLogoutModalVisible(false);
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([fetchUserInfo(), fetchTransactionHistory()]);
+    setRefreshing(false);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       fetchUserInfo();
       fetchTransactionHistory();
 
-      allowNavigationRef.current = false; // Reset on focus
+      allowNavigationRef.current = false;
 
       const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-        if (allowNavigationRef.current) return; // Allow navigation if confirmed
+        if (allowNavigationRef.current) return;
         e.preventDefault();
         setIsLogoutModalVisible(true);
       });
@@ -109,16 +115,15 @@ const Home = () => {
     }, [navigation])
   );
 
-  // Custom confirm handler to match Menu flow and allow navigation
   const handleConfirmLogout = async () => {
     setIsLogoutModalVisible(false);
     await handleLogout();
-    allowNavigationRef.current = true; // Allow navigation after logout
-    navigation.goBack(); // Trigger back navigation to complete the flow
+    allowNavigationRef.current = true;
+    navigation.goBack();
   };
 
-  const renderTransactionItem = ({ item }) => (
-    <View style={globalStyles.listItem}>
+  const renderTransactionItem = (item) => (
+    <View style={globalStyles.listItem} key={item.id.toString()}>
       <View style={globalStyles.listItemLeft}>
         <Text style={globalStyles.listItemDate}>{formatDatetime(item.scanned_datetime)}</Text>
         <Text style={globalStyles.listItemPrimary}>
@@ -134,7 +139,13 @@ const Home = () => {
   );
 
   return (
-    <View style={globalStyles.container}>
+    <ScrollView
+      style={{ flex: 1 }} // Only structural styles here
+      contentContainerStyle={globalStyles.container} // Layout styles moved here
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <View style={localStyles.profileSection}>
         <Image source={require('../assets/images/user-icon.png')} style={localStyles.profileImage} />
         <View>
@@ -150,13 +161,13 @@ const Home = () => {
         <View style={globalStyles.sectionTitleContainer}>
           <Text style={globalStyles.sectionTitle}>Transaction History:</Text>
         </View>
-        <FlatList
-          data={transactionHistory}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderTransactionItem}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          showsVerticalScrollIndicator={false}
-        />
+        <View>
+          {transactionHistory.length > 0 ? (
+            transactionHistory.map(renderTransactionItem)
+          ) : (
+            <Text style={localStyles.noTransactions}>No transactions available</Text>
+          )}
+        </View>
       </View>
       <Modal visible={isLogoutModalVisible} animationType="none" transparent>
         <View style={globalStyles.modalOverlay}>
@@ -174,7 +185,7 @@ const Home = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[globalStyles.actionButton, { backgroundColor: '#3578E5' }]}
-                onPress={handleConfirmLogout} // Use custom handler here
+                onPress={handleConfirmLogout}
               >
                 <Text style={globalStyles.actionButtonText}>Yes</Text>
               </TouchableOpacity>
@@ -182,7 +193,7 @@ const Home = () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -223,6 +234,12 @@ const localStyles = {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#FFF',
+  },
+  noTransactions: {
+    fontSize: 16,
+    color: '#777',
+    textAlign: 'center',
+    marginTop: 10,
   },
 };
 

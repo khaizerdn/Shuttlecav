@@ -11,16 +11,15 @@ Note:
 
 Suggestions:
 - In Start Inspection page, at the right side of the "Recent Logs:", a button when clicked, it will show the details of the passenger rates. // Ilagay sa pag select ng passenger type, kapag cinlick yung + button sa start inepsction page.
-[Ang nakalagay sa Rate ay passenger rate + added route. Para mas madaling malaman kung magkano ang sisingilin ni inspector sa current settings ng iniiinspect niya.]
-- Admin have the ability to role an account. // Add to admin panel. [Admin can now add inspector]
-- In Transaction History page, Activity Logs page, and Inspection Logs page, when one of the list is clicked, it will show more details such as the reference number, driver, inspector, plate, etc. // Add 
-
-- Add an MPIN (4 digit number) to access the account. For efficient user log in.// Add and remove password.
+[Done. Ang nakalagay sa Rate ay passenger rate + added route. Para mas madaling malaman kung magkano ang sisingilin ni inspector sa current settings ng iniiinspect niya.]
+- Admin have the ability to role an account. // Add to admin panel. [Done. Admin can now add inspector]
+- In Transaction History page, Activity Logs page, and Inspection Logs page, when one of the list is clicked, it will show more details such as the reference number, driver, inspector, plate, etc. // Add [Done]
+- Add an MPIN (4 digit number) to access the account. For efficient user log in.// Add and remove password. [Done]
 
 Soon:
 - Add forgot MPIN functionality. // Not sure pa
 - Email registration. This is essential for forgot password functionality. // Not sure pa
-- Have a pull to refresh in the pages or logs. // Add
+- Have a pull to refresh in the pages or logs. // Add [Done]
 - Add lazy loading for effiecient browsing. Especially for logs. // Add
 - Check what is the notification if a user has no NFC feature on device but trying to click the Yes button for confirming enabling the NFC. // Mag isip ng idea how to bypass ang device na may NFC pero hindi makapag navigate sa enabling settings.
 

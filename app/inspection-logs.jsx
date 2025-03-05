@@ -18,6 +18,7 @@ const InspectionLogs = () => {
   const [searchText, setSearchText] = useState('');
   const [inspectionLogs, setInspectionLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // New state for pull-to-refresh
   const [inspectionOverview, setInspectionOverview] = useState(null);
   const [showInspectionOverviewModal, setShowInspectionOverviewModal] = useState(false);
 
@@ -52,7 +53,14 @@ const InspectionLogs = () => {
       console.error('Error fetching inspection logs:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false); // Reset refreshing state after fetch completes
     }
+  };
+
+  // Handle pull-to-refresh
+  const onRefresh = () => {
+    setRefreshing(true); // Show the refresh indicator
+    fetchInspectionLogs(); // Trigger the data fetch
   };
 
   // Fetch detailed inspection data
@@ -140,6 +148,8 @@ const InspectionLogs = () => {
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
+          refreshing={refreshing} // Add refreshing prop
+          onRefresh={onRefresh}   // Add onRefresh prop
         />
       </View>
 

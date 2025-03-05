@@ -17,6 +17,7 @@ const TransactionHistory = () => {
   const [searchText, setSearchText] = useState('');
   const [transactionHistory, setTransactionHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // New state for pull-to-refresh
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
@@ -52,7 +53,14 @@ const TransactionHistory = () => {
       console.error('Error fetching transaction history:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false); // Reset refreshing state after fetch completes
     }
+  };
+
+  // Handle pull-to-refresh
+  const onRefresh = () => {
+    setRefreshing(true); // Show the refresh indicator
+    fetchTransactionHistory(); // Trigger the data fetch
   };
 
   // Fetch detailed inspection data for the receipt modal
@@ -64,7 +72,6 @@ const TransactionHistory = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        // Combine transaction-specific data with inspection data
         setSelectedTransaction({
           ...data,
           scanned_datetime: transaction.scanned_datetime,
@@ -96,7 +103,6 @@ const TransactionHistory = () => {
   });
 
   const handleLogPress = (item) => {
-    // Pass the full transaction item to include scanned_datetime and fare
     if (item.inspection_id) {
       fetchInspectionDetails(item);
     } else {
@@ -144,6 +150,8 @@ const TransactionHistory = () => {
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
+          refreshing={refreshing} // Add refreshing prop
+          onRefresh={onRefresh}   // Add onRefresh prop
         />
       </View>
 
