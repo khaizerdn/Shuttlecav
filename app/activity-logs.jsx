@@ -1,3 +1,4 @@
+// activity-logs.jsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -18,6 +19,8 @@ const ActivityLogs = () => {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [activityLogs, setActivityLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [inspectionOverview, setInspectionOverview] = useState(null);
+  const [showInspectionOverviewModal, setShowInspectionOverviewModal] = useState(false);
 
   // Helper to format datetime as "January 25, 2025 at 8:34 AM"
   const formatFullDate = (datetime) => {
@@ -47,7 +50,7 @@ const ActivityLogs = () => {
   // Grouping helpers for filtering (Weekly, Monthly, Yearly)
   const fullMonths = [
     'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'July', 'August', 'September', 'October', 'November', 'December',
   ];
 
   const getMonthlyLabel = (dateObj) => {
@@ -90,7 +93,6 @@ const ActivityLogs = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        // Data is expected to be an array of inspection records.
         setActivityLogs(data);
       } else {
         console.error('Failed to fetch activity logs');
@@ -102,11 +104,30 @@ const ActivityLogs = () => {
     }
   };
 
+  // Fetch detailed inspection data for the receipt modal
+  const fetchInspectionDetails = async (inspectionId) => {
+    const token = await AsyncStorage.getItem('userToken');
+    try {
+      const response = await fetch(`${config.API_URL}/inspections/${inspectionId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInspectionOverview(data);
+        setShowInspectionOverviewModal(true);
+      } else {
+        console.error('Failed to fetch inspection details');
+      }
+    } catch (error) {
+      console.error('Error fetching inspection details:', error);
+    }
+  };
+
   useEffect(() => {
     fetchActivityLogs();
   }, []);
 
-  // Filter logs based on search text using the formatted date, driver, or total claimed money.
+  // Filter logs based on search text using the formatted date, driver, or total claimed money
   const filteredLogs = activityLogs.filter((log) => {
     const lowerSearch = searchText.toLowerCase();
     const formattedDate = formatFullDate(log.start_datetime);
@@ -118,8 +139,7 @@ const ActivityLogs = () => {
     );
   });
 
-  // Group logs based on the selected filter type.
-  // For "Per-Trip", include driver, plate, inspector, and route.
+  // Group logs based on the selected filter type
   const getFilteredLogs = () => {
     if (filterType === 'Per-Trip') {
       return filteredLogs.map(log => ({
@@ -128,9 +148,8 @@ const ActivityLogs = () => {
         driver: log.driver,
         plate: log.plate,
         inspector: log.inspector_fullname,
-        // Build the route string from origin and destination.
         route: log.origin && log.destination ? `${log.origin} to ${log.destination}` : '',
-        totalClaimed: parseFloat(log.total_claimed_money).toFixed(2)
+        totalClaimed: parseFloat(log.total_claimed_money).toFixed(2),
       }));
     }
     const groupedMap = new Map();
@@ -141,7 +160,6 @@ const ActivityLogs = () => {
       let displayDate = '';
       switch (filterType) {
         case 'Daily':
-          // Use formatDateOnly for daily grouping.
           groupKey = formatDateOnly(log.start_datetime);
           displayDate = formatDateOnly(log.start_datetime);
           break;
@@ -173,7 +191,6 @@ const ActivityLogs = () => {
           id: groupKey,
           date: displayDate,
           totalClaimed: claimed,
-          // In grouped view, driver/plate/inspector/route are not applicable.
           driver: '',
           plate: '',
           inspector: '',
@@ -195,6 +212,12 @@ const ActivityLogs = () => {
   const handleFilterSelect = (type) => {
     setFilterType(type);
     setShowFilterModal(false);
+  };
+
+  const handleLogPress = (item) => {
+    if (filterType === 'Per-Trip') {
+      fetchInspectionDetails(item.id);
+    }
   };
 
   if (loading) {
@@ -230,7 +253,10 @@ const ActivityLogs = () => {
           data={finalLogs}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <View style={globalStyles.listItem}>
+            <TouchableOpacity
+              style={globalStyles.listItem}
+              onPress={() => handleLogPress(item)}
+            >
               <View style={globalStyles.listItemLeft}>
                 <Text style={globalStyles.listItemPrimary}>{item.date}</Text>
                 {filterType === 'Per-Trip' && (
@@ -247,7 +273,7 @@ const ActivityLogs = () => {
                   + {item.totalClaimed}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
@@ -289,12 +315,113 @@ const ActivityLogs = () => {
             >
               <Text style={globalStyles.buttonText}>Yearly</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={globalStyles.cancelButton}
               onPress={() => setShowFilterModal(false)}
             >
               <Text style={globalStyles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Inspection Overview (Receipt) Modal - Exact copy from start-inspection.jsx */}
+      <Modal visible={showInspectionOverviewModal} animationType="slide" transparent={true}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={styles.receiptWrapper}>
+            <View style={[globalStyles.modalContainer, styles.receiptContainer]}>
+              <Text style={styles.receiptTitle}>Inspection Receipt</Text>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Inspection ID:</Text>
+                <Text style={styles.receiptValue}>
+                  {inspectionOverview?.inspectionId || 'N/A'}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Inspector:</Text>
+                <Text style={styles.receiptValue}>
+                  {inspectionOverview?.inspector || 'N/A'}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Driver:</Text>
+                <Text style={styles.receiptValue}>
+                  {inspectionOverview?.driver || 'N/A'}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Plate Number:</Text>
+                <Text style={styles.receiptValue}>
+                  {inspectionOverview?.plate || 'N/A'}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Route:</Text>
+                <Text style={styles.receiptValue}>
+                  {inspectionOverview?.route?.origin} to{' '}
+                  {inspectionOverview?.route?.destination}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Added Rate:</Text>
+                <Text style={styles.receiptValue}>
+                  PHP {Number(inspectionOverview?.route?.added_rate || 0).toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Total Passengers:</Text>
+                <Text style={styles.receiptValue}>
+                  {inspectionOverview?.total_passengers || 0}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Total Money:</Text>
+                <Text style={styles.receiptValue}>
+                  PHP {Number(inspectionOverview?.total_claimed_money || 0).toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>End Date:</Text>
+                <Text style={styles.receiptValue}>
+                  {inspectionOverview?.end_datetime
+                    ? formatFullDate(inspectionOverview.end_datetime)
+                    : 'N/A'}
+                </Text>
+              </View>
+              {inspectionOverview?.passengerCounts && (
+                <>
+                  <View style={styles.receiptDivider} />
+                  <Text style={styles.receiptSubtitle}>Passenger Breakdown</Text>
+                  {Object.keys(inspectionOverview.passengerCounts).map((type, index) => (
+                    <View style={styles.receiptRow} key={index}>
+                      <Text style={styles.receiptLabel}>{type}:</Text>
+                      <Text style={styles.receiptValue}>
+                        {inspectionOverview.passengerCounts[type]}
+                      </Text>
+                    </View>
+                  ))}
+                </>
+              )}
+              {inspectionOverview?.currentFareRates && (
+                <>
+                  <View style={styles.receiptDivider} />
+                  <Text style={styles.receiptSubtitle}>Fare Rates</Text>
+                  {inspectionOverview.currentFareRates.map((fareInfo, index) => (
+                    <View style={styles.receiptRow} key={index}>
+                      <Text style={styles.receiptLabel}>{fareInfo.passenger_type}:</Text>
+                      <Text style={styles.receiptValue}>
+                        PHP {Number(fareInfo.current_fare_rate).toFixed(2)}
+                      </Text>
+                    </View>
+                  ))}
+                </>
+              )}
+            </View>
+            <TouchableOpacity
+              style={[globalStyles.button, styles.outsideButton]}
+              onPress={() => setShowInspectionOverviewModal(false)}
+            >
+              <Text style={globalStyles.buttonText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -333,5 +460,60 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  // Styles copied from start-inspection.jsx for the receipt modal
+  receiptWrapper: {
+    width: '90%',
+    alignSelf: 'center',
+    alignItems: 'stretch',
+  },
+  receiptContainer: {
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    width: '100%',
+  },
+  outsideButton: {
+    marginTop: 10,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  receiptTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  receiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 4,
+  },
+  receiptLabel: {
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'left',
+    width: 130,
+  },
+  receiptValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'right',
+    flex: 1,
+  },
+  receiptDivider: {
+    borderBottomColor: '#ccc',
+    borderBottomWidth: 1,
+    marginVertical: 10,
+  },
+  receiptSubtitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 6,
+    textAlign: 'center',
   },
 });
