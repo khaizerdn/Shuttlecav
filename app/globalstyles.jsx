@@ -207,6 +207,8 @@ const globalStyles = StyleSheet.create({
   actionButton: {
     flex: 1,
     height: 50,
+    maxHeight: 50,
+    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,

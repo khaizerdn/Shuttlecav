@@ -697,7 +697,68 @@ app.get('/activity-logs', authenticateToken, (req, res) => {
   });
 });
 
+// Endpoint to get all users
+app.get('/fetchusers', authenticateToken, (req, res) => {
+  const userId = req.user.userId; // Assuming authenticateToken attaches the user ID to req.user
+  const query = `
+    SELECT id, username, surname, firstname, middleinitial 
+    FROM users 
+    WHERE (role NOT IN ('inspector', 'admin') OR role IS NULL) 
+    AND id != ?
+  `;
+  db.query(query, [userId], (err, result) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ message: 'Error fetching users' });
+    }
+    console.log('Fetched users (excluding inspectors, admins, and current user):', result); // Debug log
+    return res.status(200).json(result);
+  });
+});
 
+app.put('/fetchusers/:id/role', authenticateToken, (req, res) => {
+  const { role } = req.body;
+  const userId = req.params.id;
+  const query = 'UPDATE users SET role = ? WHERE id = ?';
+  db.query(query, [role, userId], (err, result) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ message: 'Error updating user role' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    return res.status(200).json({ message: 'User role updated successfully' });
+  });
+});
+
+app.get('/inspectors', authenticateToken, (req, res) => {
+  const query = 'SELECT id, firstname, surname, middleinitial FROM users WHERE role = "inspector"';
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ message: 'Error fetching inspectors' });
+    }
+    return res.status(200).json(result);
+  });
+});
+
+app.put('/users/:id/role', authenticateToken, (req, res) => {
+  const { role } = req.body;
+  const userId = req.params.id;
+  
+  const query = 'UPDATE users SET role = ? WHERE id = ?';
+  db.query(query, [role, userId], (err, result) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ message: 'Error updating user role' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    return res.status(200).json({ message: 'User role updated successfully' });
+  });
+});
 
 // Start the server
 app.listen(port, () => {
