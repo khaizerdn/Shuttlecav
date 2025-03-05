@@ -602,72 +602,74 @@ export default function StartInspection() {
 
       {/* Inspection Overview (Receipt) Modal */}
       <Modal visible={showInspectionOverviewModal} animationType="slide" transparent={true}>
-        <View style={globalStyles.modalOverlay}>
-          <View style={styles.receiptWrapper}>
-            <View style={[globalStyles.modalContainer, styles.receiptContainer]}>
-              <Text style={styles.receiptTitle}>Inspection Receipt</Text>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Inspection ID:</Text>
-                <Text style={styles.receiptValue}>{inspectionOverview?.inspectionId || 'N/A'}</Text>
-              </View>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Inspector:</Text>
-                <Text style={styles.receiptValue}>{inspectionOverview?.inspector}</Text>
-              </View>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Driver:</Text>
-                <Text style={styles.receiptValue}>{driver || 'N/A'}</Text>
-              </View>
-              {/* New row to display the plate number */}
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Plate Number:</Text>
-                <Text style={styles.receiptValue}>{inspectionOverview?.plate || 'N/A'}</Text>
-              </View>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Route:</Text>
-                <Text style={styles.receiptValue}>
-                  {inspectionOverview?.route.origin} to {inspectionOverview?.route.destination}
-                </Text>
-              </View>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Added Rate:</Text>
-                <Text style={styles.receiptValue}>PHP {inspectionOverview?.route.added_rate.toFixed(2)}</Text>
-              </View>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Total Passengers:</Text>
-                <Text style={styles.receiptValue}>{inspectionOverview?.total_passengers}</Text>
-              </View>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Total Money:</Text>
-                <Text style={styles.receiptValue}>PHP {inspectionOverview?.total_claimed_money.toFixed(2)}</Text>
-              </View>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>End Date:</Text>
-                <Text style={styles.receiptValue}>{formatDatetime(inspectionOverview?.end_datetime)}</Text>
-              </View>
-              <View style={styles.receiptDivider} />
-              <Text style={styles.receiptSubtitle}>Passenger Breakdown</Text>
-              {inspectionOverview?.passengerCounts &&
-                Object.keys(inspectionOverview.passengerCounts).map((type, index) => (
+        <ScrollView>
+          <View style={globalStyles.modalOverlay}>
+            <View style={styles.receiptWrapper}>
+              <View style={[globalStyles.modalContainer, styles.receiptContainer]}>
+                <Text style={styles.receiptTitle}>Inspection Receipt</Text>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Inspection ID:</Text>
+                  <Text style={styles.receiptValue}>{inspectionOverview?.inspectionId || 'N/A'}</Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Inspector:</Text>
+                  <Text style={styles.receiptValue}>{inspectionOverview?.inspector}</Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Driver:</Text>
+                  <Text style={styles.receiptValue}>{driver || 'N/A'}</Text>
+                </View>
+                {/* New row to display the plate number */}
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Plate Number:</Text>
+                  <Text style={styles.receiptValue}>{inspectionOverview?.plate || 'N/A'}</Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Route:</Text>
+                  <Text style={styles.receiptValue}>
+                    {inspectionOverview?.route.origin} to {inspectionOverview?.route.destination}
+                  </Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Added Rate:</Text>
+                  <Text style={styles.receiptValue}>PHP {inspectionOverview?.route.added_rate.toFixed(2)}</Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Total Passengers:</Text>
+                  <Text style={styles.receiptValue}>{inspectionOverview?.total_passengers}</Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Total Money:</Text>
+                  <Text style={styles.receiptValue}>PHP {inspectionOverview?.total_claimed_money.toFixed(2)}</Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>End Date:</Text>
+                  <Text style={styles.receiptValue}>{formatDatetime(inspectionOverview?.end_datetime)}</Text>
+                </View>
+                <View style={styles.receiptDivider} />
+                <Text style={styles.receiptSubtitle}>Passenger Breakdown</Text>
+                {inspectionOverview?.passengerCounts &&
+                  Object.keys(inspectionOverview.passengerCounts).map((type, index) => (
+                    <View style={styles.receiptRow} key={index}>
+                      <Text style={styles.receiptLabel}>{type}:</Text>
+                      <Text style={styles.receiptValue}>{inspectionOverview.passengerCounts[type]}</Text>
+                    </View>
+                  ))}
+                <View style={styles.receiptDivider} />
+                <Text style={styles.receiptSubtitle}>Fare Rates</Text>
+                {inspectionOverview?.currentFareRates.map((fareInfo, index) => (
                   <View style={styles.receiptRow} key={index}>
-                    <Text style={styles.receiptLabel}>{type}:</Text>
-                    <Text style={styles.receiptValue}>{inspectionOverview.passengerCounts[type]}</Text>
+                    <Text style={styles.receiptLabel}>{fareInfo.passenger_type}:</Text>
+                    <Text style={styles.receiptValue}>PHP {fareInfo.current_fare_rate.toFixed(2)}</Text>
                   </View>
                 ))}
-              <View style={styles.receiptDivider} />
-              <Text style={styles.receiptSubtitle}>Fare Rates</Text>
-              {inspectionOverview?.currentFareRates.map((fareInfo, index) => (
-                <View style={styles.receiptRow} key={index}>
-                  <Text style={styles.receiptLabel}>{fareInfo.passenger_type}:</Text>
-                  <Text style={styles.receiptValue}>PHP {fareInfo.current_fare_rate.toFixed(2)}</Text>
-                </View>
-              ))}
+              </View>
+              <TouchableOpacity style={[globalStyles.button, styles.outsideButton]} onPress={() => setShowInspectionOverviewModal(false)}>
+                <Text style={globalStyles.buttonText}>Close</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={[globalStyles.button, styles.outsideButton]} onPress={() => setShowInspectionOverviewModal(false)}>
-              <Text style={globalStyles.buttonText}>Close</Text>
-            </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       </Modal>
     </View>
   );
