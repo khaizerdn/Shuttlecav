@@ -1,3 +1,4 @@
+// SignUp.jsx
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -14,12 +15,12 @@ const SignUp = () => {
   const [gender, setGender] = useState('');
   const [phonenumber, setPhoneNumber] = useState('');
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [mpin, setMpin] = useState('');
+  const [confirmMpin, setConfirmMpin] = useState('');
   const [errors, setErrors] = useState({});
   const [focusedField, setFocusedField] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showMpin, setShowMpin] = useState(false);
+  const [showConfirmMpin, setShowConfirmMpin] = useState(false);
   const router = useRouter();
 
   // Immediate username validation (length and format)
@@ -99,11 +100,8 @@ const SignUp = () => {
     return /^\d{11}$/.test(value) ? '' : 'Must be exactly 11 digits';
   };
 
-  const validatePassword = (value) => {
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
-    return strongPasswordRegex.test(value)
-      ? ''
-      : 'Must be at least 8 characters with uppercase, lowercase, number, and special character';
+  const validateMpin = (value) => {
+    return /^\d{4}$/.test(value) ? '' : 'Must be exactly 4 digits';
   };
 
   const handleInputChange = (field, value, setter) => {
@@ -128,8 +126,8 @@ const SignUp = () => {
       case 'phonenumber':
         error = validatePhoneNumber(value);
         break;
-      case 'password':
-        error = validatePassword(value);
+      case 'mpin':
+        error = validateMpin(value);
         break;
       default:
         break;
@@ -146,7 +144,7 @@ const SignUp = () => {
       !errors.gender &&
       !errors.phonenumber &&
       !errors.username &&
-      !errors.password &&
+      !errors.mpin &&
       surname &&
       firstname &&
       middleinitial &&
@@ -154,8 +152,8 @@ const SignUp = () => {
       gender &&
       phonenumber &&
       username &&
-      password &&
-      password === confirmPassword
+      mpin &&
+      mpin === confirmMpin
     );
   };
 
@@ -166,6 +164,7 @@ const SignUp = () => {
     }
 
     try {
+      // Map mpin and confirmMpin to password and confirmPassword for backend compatibility
       const response = await axios.post(`${config.API_URL}/signup`, {
         surname,
         firstname,
@@ -174,8 +173,8 @@ const SignUp = () => {
         gender,
         phonenumber,
         username,
-        password,
-        confirmPassword,
+        password: mpin,        // Send mpin as password
+        confirmPassword: confirmMpin, // Send confirmMpin as confirmPassword
       });
       console.log(response.data);
       router.push('/');
@@ -300,28 +299,30 @@ const SignUp = () => {
             style={[
               globalStyles.listItem,
               styles.passwordInput,
-              errors.password && { borderColor: 'red', borderWidth: 1 },
+              errors.mpin && { borderColor: 'red', borderWidth: 1 },
             ]}
-            placeholder="Password"
-            secureTextEntry={!showPassword}
-            value={password}
-            onChangeText={(text) => handleInputChange('password', text, setPassword)}
-            onFocus={() => setFocusedField('password')}
+            placeholder="MPIN (4 digits)"
+            keyboardType="numeric"
+            maxLength={4}
+            secureTextEntry={!showMpin}
+            value={mpin}
+            onChangeText={(text) => handleInputChange('mpin', text, setMpin)}
+            onFocus={() => setFocusedField('mpin')}
             onBlur={() => setFocusedField(null)}
           />
           <TouchableOpacity
             style={styles.eyeIcon}
-            onPress={() => setShowPassword(!showPassword)}
+            onPress={() => setShowMpin(!showMpin)}
           >
             <Ionicons
-              name={showPassword ? 'eye-off' : 'eye'}
+              name={showMpin ? 'eye-off' : 'eye'}
               size={24}
-              color={errors.password ? 'red' : '#666'}
+              color={errors.mpin ? 'red' : '#666'}
             />
           </TouchableOpacity>
         </View>
-        {errors.password && focusedField === 'password' && (
-          <Text style={styles.errorText}>{errors.password}</Text>
+        {errors.mpin && focusedField === 'mpin' && (
+          <Text style={styles.errorText}>{errors.mpin}</Text>
         )}
 
         <View style={styles.inputContainer}>
@@ -330,26 +331,28 @@ const SignUp = () => {
               globalStyles.listItem,
               styles.passwordInput,
             ]}
-            placeholder="Confirm Password"
-            secureTextEntry={!showConfirmPassword}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            onFocus={() => setFocusedField('confirmPassword')}
+            placeholder="Confirm MPIN"
+            keyboardType="numeric"
+            maxLength={4}
+            secureTextEntry={!showConfirmMpin}
+            value={confirmMpin}
+            onChangeText={setConfirmMpin}
+            onFocus={() => setFocusedField('confirmMpin')}
             onBlur={() => setFocusedField(null)}
           />
           <TouchableOpacity
             style={styles.eyeIcon}
-            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            onPress={() => setShowConfirmMpin(!showConfirmMpin)}
           >
             <Ionicons
-              name={showConfirmPassword ? 'eye-off' : 'eye'}
+              name={showConfirmMpin ? 'eye-off' : 'eye'}
               size={24}
-              color={password !== confirmPassword && confirmPassword ? 'red' : '#666'}
+              color={mpin !== confirmMpin && confirmMpin ? 'red' : '#666'}
             />
           </TouchableOpacity>
         </View>
-        {password !== confirmPassword && focusedField === 'confirmPassword' && (
-          <Text style={styles.errorText}>Passwords do not match</Text>
+        {mpin !== confirmMpin && focusedField === 'confirmMpin' && (
+          <Text style={styles.errorText}>MPINs do not match</Text>
         )}
 
         <TouchableOpacity

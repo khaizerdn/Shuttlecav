@@ -1,3 +1,4 @@
+// Login.jsx
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -8,8 +9,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Login = () => {
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [errorMessage, setErrorMessage] = useState(''); // State for error message
+  const [mpin, setMpin] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -19,7 +20,7 @@ const Login = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password: mpin }), // Map mpin to password
       });
 
       if (response.ok) {
@@ -27,7 +28,7 @@ const Login = () => {
         await AsyncStorage.setItem('userToken', data.token);
         router.push('/home');
       } else {
-        setErrorMessage('Your username or password is incorrect.');
+        setErrorMessage('Your username or MPIN is incorrect.');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -48,18 +49,20 @@ const Login = () => {
       />
       <TextInput
         style={globalStyles.listItem}
-        placeholder="Password"
+        placeholder="MPIN (4 digits)"
         placeholderTextColor="#A9A9A9"
+        keyboardType="numeric"
+        maxLength={4}
         secureTextEntry
-        value={password}
-        onChangeText={setPassword}
+        value={mpin}
+        onChangeText={setMpin}
       />
       {errorMessage ? <Text style={globalStyles.inputErrorText}>{errorMessage}</Text> : null}
       <TouchableOpacity style={globalStyles.button} onPress={handleLogin}>
         <Text style={globalStyles.buttonText}>Log in</Text>
       </TouchableOpacity>
       <TouchableOpacity>
-        <Text style={globalStyles.linkText}>Forgot Password?</Text>
+        <Text style={globalStyles.linkText}>Forgot MPIN?</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => router.push('/signup')}>
         <Text style={globalStyles.linkText}>Sign up</Text>

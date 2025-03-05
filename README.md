@@ -13,8 +13,8 @@ Suggestions:
 - In Start Inspection page, at the right side of the "Recent Logs:", a button when clicked, it will show the details of the passenger rates. // Ilagay sa pag select ng passenger type, kapag cinlick yung + button sa start inepsction page.
 [Ang nakalagay sa Rate ay passenger rate + added route. Para mas madaling malaman kung magkano ang sisingilin ni inspector sa current settings ng iniiinspect niya.]
 - Admin have the ability to role an account. // Add to admin panel. [Admin can now add inspector]
-
 - In Transaction History page, Activity Logs page, and Inspection Logs page, when one of the list is clicked, it will show more details such as the reference number, driver, inspector, plate, etc. // Add 
+
 - Add an MPIN (4 digit number) to access the account. For efficient user log in.// Add and remove password.
 
 Soon:
