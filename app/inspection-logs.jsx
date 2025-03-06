@@ -1,4 +1,3 @@
-// inspection-logs.jsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -18,7 +17,7 @@ const InspectionLogs = () => {
   const [searchText, setSearchText] = useState('');
   const [inspectionLogs, setInspectionLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // New state for pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false);
   const [inspectionOverview, setInspectionOverview] = useState(null);
   const [showInspectionOverviewModal, setShowInspectionOverviewModal] = useState(false);
 
@@ -53,14 +52,14 @@ const InspectionLogs = () => {
       console.error('Error fetching inspection logs:', error);
     } finally {
       setLoading(false);
-      setRefreshing(false); // Reset refreshing state after fetch completes
+      setRefreshing(false);
     }
   };
 
   // Handle pull-to-refresh
   const onRefresh = () => {
-    setRefreshing(true); // Show the refresh indicator
-    fetchInspectionLogs(); // Trigger the data fetch
+    setRefreshing(true);
+    fetchInspectionLogs();
   };
 
   // Fetch detailed inspection data
@@ -148,15 +147,15 @@ const InspectionLogs = () => {
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
-          refreshing={refreshing} // Add refreshing prop
-          onRefresh={onRefresh}   // Add onRefresh prop
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       </View>
 
       {/* Inspection Overview (Receipt) Modal */}
-      <Modal visible={showInspectionOverviewModal} animationType="slide" transparent={true}>
-        <ScrollView>
-          <View style={globalStyles.modalOverlay}>
+      <Modal visible={showInspectionOverviewModal} animationType="none" transparent={true}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={styles.receiptOverlay}>
             <View style={styles.receiptWrapper}>
               <View style={[globalStyles.modalContainer, styles.receiptContainer]}>
                 <Text style={styles.receiptTitle}>Inspection Receipt</Text>
@@ -279,10 +278,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+  receiptOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFF', // Solid white background to block the underlying screen
+  },
   receiptWrapper: {
     width: '90%',
     alignSelf: 'center',
     alignItems: 'stretch',
+    backgroundColor: '#fff', // Ensure wrapper matches receipt background
+    borderRadius: 10,
+    paddingBottom: 10, // Space for the button
   },
   receiptContainer: {
     padding: 20,

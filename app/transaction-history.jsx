@@ -1,4 +1,3 @@
-// transaction-history.jsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -8,6 +7,7 @@ import {
   TouchableOpacity,
   Modal,
   StyleSheet,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { config } from './config';
@@ -17,7 +17,7 @@ const TransactionHistory = () => {
   const [searchText, setSearchText] = useState('');
   const [transactionHistory, setTransactionHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // New state for pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
@@ -53,14 +53,14 @@ const TransactionHistory = () => {
       console.error('Error fetching transaction history:', error);
     } finally {
       setLoading(false);
-      setRefreshing(false); // Reset refreshing state after fetch completes
+      setRefreshing(false);
     }
   };
 
   // Handle pull-to-refresh
   const onRefresh = () => {
-    setRefreshing(true); // Show the refresh indicator
-    fetchTransactionHistory(); // Trigger the data fetch
+    setRefreshing(true);
+    fetchTransactionHistory();
   };
 
   // Fetch detailed inspection data for the receipt modal
@@ -150,80 +150,91 @@ const TransactionHistory = () => {
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
-          refreshing={refreshing} // Add refreshing prop
-          onRefresh={onRefresh}   // Add onRefresh prop
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       </View>
 
       {/* Limited Receipt Modal with Scanned Date Time and Fare */}
-      <Modal visible={showReceiptModal} animationType="slide" transparent={true}>
-        <View style={globalStyles.modalOverlay}>
-          <View style={styles.receiptWrapper}>
-            <View style={[globalStyles.modalContainer, styles.receiptContainer]}>
-              <Text style={styles.receiptTitle}>Transaction Receipt</Text>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Inspection ID:</Text>
-                <Text style={styles.receiptValue}>
-                  {selectedTransaction?.inspectionId || 'N/A'}
-                </Text>
+      <Modal visible={showReceiptModal} animationType="none" transparent={true}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={styles.receiptOverlay}>
+            <View style={styles.receiptWrapper}>
+              <View style={[globalStyles.modalContainer, styles.receiptContainer]}>
+                <Text style={styles.receiptTitle}>Transaction Receipt</Text>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Inspection ID:</Text>
+                  <Text style={styles.receiptValue}>
+                    {selectedTransaction?.inspectionId || 'N/A'}
+                  </Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Route:</Text>
+                  <Text style={styles.receiptValue}>
+                    {selectedTransaction?.route?.origin} to {selectedTransaction?.route?.destination}
+                  </Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Added Rate:</Text>
+                  <Text style={styles.receiptValue}>
+                    PHP {Number(selectedTransaction?.route?.added_rate || 0).toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Scanned Date Time:</Text>
+                  <Text style={styles.receiptValue}>
+                    {selectedTransaction?.scanned_datetime ? formatDate(selectedTransaction.scanned_datetime) : 'N/A'}
+                  </Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Fare:</Text>
+                  <Text style={styles.receiptValue}>
+                    PHP {Number(selectedTransaction?.fare || 0).toFixed(2)}
+                  </Text>
+                </View>
+                {selectedTransaction?.currentFareRates && (
+                  <>
+                    <View style={styles.receiptDivider} />
+                    <Text style={styles.receiptSubtitle}>Fare Rates</Text>
+                    {selectedTransaction.currentFareRates.map((fareInfo, index) => (
+                      <View style={styles.receiptRow} key={index}>
+                        <Text style={styles.receiptLabel}>{fareInfo.passenger_type}:</Text>
+                        <Text style={styles.receiptValue}>
+                          PHP {Number(fareInfo.current_fare_rate).toFixed(2)}
+                        </Text>
+                      </View>
+                    ))}
+                  </>
+                )}
               </View>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Route:</Text>
-                <Text style={styles.receiptValue}>
-                  {selectedTransaction?.route?.origin} to {selectedTransaction?.route?.destination}
-                </Text>
-              </View>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Added Rate:</Text>
-                <Text style={styles.receiptValue}>
-                  PHP {Number(selectedTransaction?.route?.added_rate || 0).toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Scanned Date Time:</Text>
-                <Text style={styles.receiptValue}>
-                  {selectedTransaction?.scanned_datetime ? formatDate(selectedTransaction.scanned_datetime) : 'N/A'}
-                </Text>
-              </View>
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Fare:</Text>
-                <Text style={styles.receiptValue}>
-                  PHP {Number(selectedTransaction?.fare || 0).toFixed(2)}
-                </Text>
-              </View>
-              {selectedTransaction?.currentFareRates && (
-                <>
-                  <View style={styles.receiptDivider} />
-                  <Text style={styles.receiptSubtitle}>Fare Rates</Text>
-                  {selectedTransaction.currentFareRates.map((fareInfo, index) => (
-                    <View style={styles.receiptRow} key={index}>
-                      <Text style={styles.receiptLabel}>{fareInfo.passenger_type}:</Text>
-                      <Text style={styles.receiptValue}>
-                        PHP {Number(fareInfo.current_fare_rate).toFixed(2)}
-                      </Text>
-                    </View>
-                  ))}
-                </>
-              )}
+              <TouchableOpacity
+                style={[globalStyles.button, styles.outsideButton]}
+                onPress={() => setShowReceiptModal(false)}
+              >
+                <Text style={globalStyles.buttonText}>Close</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={[globalStyles.button, styles.outsideButton]}
-              onPress={() => setShowReceiptModal(false)}
-            >
-              <Text style={globalStyles.buttonText}>Close</Text>
-            </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  receiptOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFF', // Solid white background to block the underlying screen
+  },
   receiptWrapper: {
     width: '90%',
     alignSelf: 'center',
     alignItems: 'stretch',
+    backgroundColor: '#fff', // Ensure wrapper matches receipt background
+    borderRadius: 10,
+    paddingBottom: 10, // Space for the button
   },
   receiptContainer: {
     padding: 20,

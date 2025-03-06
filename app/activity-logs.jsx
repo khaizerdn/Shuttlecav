@@ -343,7 +343,7 @@ const ActivityLogs = () => {
               <Text style={globalStyles.buttonText}>Yearly</Text>
             </TouchableOpacity>
             <View style={styles.separator} />
-            <Text style={globalStyles.modalTitle}>Sort by Total Claimed Money</Text>
+            <Text style={globalStyles.modalTitle}>Sort by</Text>
             <TouchableOpacity
               style={globalStyles.button}
               onPress={() => handleSortSelect('asc')}
@@ -367,9 +367,9 @@ const ActivityLogs = () => {
       </Modal>
 
       {/* Inspection Overview (Receipt) Modal */}
-      <Modal visible={showInspectionOverviewModal} animationType="slide" transparent={true}>
-        <ScrollView>
-          <View style={globalStyles.modalOverlay}>
+      <Modal visible={showInspectionOverviewModal} animationType="none" transparent={true}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={styles.receiptOverlay}>
             <View style={styles.receiptWrapper}>
               <View style={[globalStyles.modalContainer, styles.receiptContainer]}>
                 <Text style={styles.receiptTitle}>Inspection Receipt</Text>
@@ -510,10 +510,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  receiptOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFF', // Solid white background to block the underlying screen
+  },
   receiptWrapper: {
     width: '90%',
     alignSelf: 'center',
     alignItems: 'stretch',
+    backgroundColor: '#fff', // Ensure wrapper matches receipt background
+    borderRadius: 10,
+    paddingBottom: 10, // Space for the button
   },
   receiptContainer: {
     padding: 20,
