@@ -44,6 +44,23 @@ const AdminPanel = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
 
+  // State for drivers
+  const [drivers, setDrivers] = useState([]);
+  const [deleteDriverModalVisible, setDeleteDriverModalVisible] = useState(false);
+  const [driverToDelete, setDriverToDelete] = useState(null);
+  const [addDriverModalVisible, setAddDriverModalVisible] = useState(false);
+  const [driverSearchQuery, setDriverSearchQuery] = useState('');
+  const [driverUsers, setDriverUsers] = useState([]);
+  const [selectedDriverUser, setSelectedDriverUser] = useState(null);
+  const [driverConfirmationModalVisible, setDriverConfirmationModalVisible] = useState(false);
+
+  // State for shuttles
+  const [shuttles, setShuttles] = useState([]);
+  const [newShuttleModalVisible, setNewShuttleModalVisible] = useState(false);
+  const [newShuttlePlateNumber, setNewShuttlePlateNumber] = useState('');
+  const [deleteShuttleModalVisible, setDeleteShuttleModalVisible] = useState(false);
+  const [shuttleToDelete, setShuttleToDelete] = useState(null);
+
   // Fetch passenger types from the server
   const fetchPassengerTypes = async () => {
     try {
@@ -102,11 +119,53 @@ const AdminPanel = () => {
     }
   };
 
+  // Fetch drivers from the server
+  const fetchDrivers = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/drivers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDrivers(data);
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to fetch drivers');
+      }
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+      Alert.alert('Error', 'An error occurred while fetching drivers');
+    }
+  };
+
+  // Fetch shuttles from the server
+  const fetchShuttles = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/shuttles-list`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setShuttles(data);
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to fetch shuttles');
+      }
+    } catch (error) {
+      console.error('Error fetching shuttles:', error);
+      Alert.alert('Error', 'An error occurred while fetching shuttles');
+    }
+  };
+
   // Load data when the component mounts
   useEffect(() => {
     fetchPassengerTypes();
     fetchRoutes();
     fetchInspectors();
+    fetchDrivers();
+    fetchShuttles();
   }, []);
 
   // ### Passenger Type Functions ###
@@ -364,7 +423,6 @@ const AdminPanel = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched users for modal:', data); // Debug log
         setUsers(data);
       } else {
         const error = await response.json();
@@ -419,11 +477,200 @@ const AdminPanel = () => {
     setSelectedUser(null);
   };
 
-  // Filter users based on search query (no additional role or ID filtering needed here)
+  // ### Driver Functions ###
+  const confirmDeleteDriver = (driver) => {
+    setDriverToDelete(driver);
+    setDeleteDriverModalVisible(true);
+  };
+
+  const cancelDeleteDriver = () => {
+    setDeleteDriverModalVisible(false);
+    setDriverToDelete(null);
+  };
+
+  const handleConfirmDeleteDriver = async () => {
+    if (!driverToDelete) return;
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/users/${driverToDelete.id}/role`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ role: null }), // Sets role to NULL
+      });
+      if (response.ok) {
+        fetchDrivers(); // Refresh the list
+        cancelDeleteDriver(); // Close the modal
+        Alert.alert('Success', 'Driver role removed successfully');
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to remove driver role');
+      }
+    } catch (error) {
+      console.error('Error removing driver role:', error);
+      Alert.alert('Error', 'An error occurred while removing the driver');
+    }
+  };
+
+  const openAddDriverModal = async () => {
+    setAddDriverModalVisible(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/fetchusers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Assuming backend filters out 'driver', 'inspector', 'admin', and current user
+        setDriverUsers(data);
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to fetch users');
+      }
+    } catch (error) {
+      console.error('Error fetching users for drivers:', error);
+      Alert.alert('Error', 'An error occurred while fetching users');
+    }
+  };
+
+  const closeAddDriverModal = () => {
+    setAddDriverModalVisible(false);
+    setDriverSearchQuery('');
+    setDriverUsers([]);
+  };
+
+  const selectDriverUser = (user) => {
+    setSelectedDriverUser(user);
+    setDriverConfirmationModalVisible(true);
+  };
+
+  const confirmAssignDriver = async () => {
+    if (!selectedDriverUser) return;
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/fetchusers/${selectedDriverUser.id}/role`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ role: 'driver' }),
+      });
+      if (response.ok) {
+        fetchDrivers(); // Refresh the drivers list
+        setDriverConfirmationModalVisible(false);
+        setAddDriverModalVisible(false);
+        Alert.alert('Success', 'Driver role assigned successfully');
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to assign driver role');
+      }
+    } catch (error) {
+      console.error('Error assigning driver role:', error);
+      Alert.alert('Error', 'An error occurred while assigning driver role');
+    }
+  };
+
+  const cancelAssignDriver = () => {
+    setDriverConfirmationModalVisible(false);
+    setSelectedDriverUser(null);
+  };
+
+  // ### Shuttle Functions ###
+  const openNewShuttleModal = () => {
+    setNewShuttleModalVisible(true);
+    setNewShuttlePlateNumber('');
+  };
+
+  const saveNewShuttle = async () => {
+    if (newShuttlePlateNumber.trim() === '') {
+      Alert.alert('Error', 'Plate number is required');
+      return;
+    }
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/shuttles-list`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          plate_number: newShuttlePlateNumber,
+        }),
+      });
+      if (response.ok) {
+        fetchShuttles();
+        setNewShuttleModalVisible(false);
+        setNewShuttlePlateNumber('');
+        Alert.alert('Success', 'Shuttle added successfully');
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to add shuttle');
+      }
+    } catch (error) {
+      console.error('Error adding new shuttle:', error);
+      Alert.alert('Error', 'An error occurred while adding the shuttle');
+    }
+  };
+
+  const cancelNewShuttleModal = () => {
+    setNewShuttleModalVisible(false);
+    setNewShuttlePlateNumber('');
+  };
+
+  const confirmDeleteShuttle = (shuttle) => {
+    setShuttleToDelete(shuttle);
+    setDeleteShuttleModalVisible(true);
+  };
+
+  const cancelDeleteShuttle = () => {
+    setDeleteShuttleModalVisible(false);
+    setShuttleToDelete(null);
+  };
+
+  const handleConfirmDeleteShuttle = async () => {
+    if (!shuttleToDelete) return;
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/shuttles-list/${shuttleToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        fetchShuttles();
+        cancelDeleteShuttle();
+        Alert.alert('Success', 'Shuttle removed successfully');
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.message || 'Failed to remove shuttle');
+      }
+    } catch (error) {
+      console.error('Error removing shuttle:', error);
+      Alert.alert('Error', 'An error occurred while removing the shuttle');
+    }
+  };
+
+  // Filter users based on search query (for inspectors)
   const filteredUsers = users.filter(user => {
     const fullName = `${user.surname || ''}, ${user.firstname || ''} ${user.middleinitial || ''}`.trim();
-    return fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.username || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return (
+      fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.username || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
+  // Filter users based on search query (for drivers)
+  const filteredDriverUsers = driverUsers.filter(user => {
+    const fullName = `${user.surname || ''}, ${user.firstname || ''} ${user.middleinitial || ''}`.trim();
+    return (
+      fullName.toLowerCase().includes(driverSearchQuery.toLowerCase()) ||
+      (user.username || '').toLowerCase().includes(driverSearchQuery.toLowerCase())
+    );
   });
 
   return (
@@ -703,7 +950,7 @@ const AdminPanel = () => {
       {/* Modal for Adding Inspector */}
       <Modal visible={addInspectorModalVisible} animationType="none" transparent={true}>
         <View style={globalStyles.modalOverlay}>
-          <View style={[globalStyles.modalContainer, { flex: 1, }]}>
+          <View style={[globalStyles.modalContainer, { flex: 1 }]}>
             <Text style={globalStyles.modalTitle}>Add Inspector</Text>
             <TextInput
               style={globalStyles.input}
@@ -752,14 +999,14 @@ const AdminPanel = () => {
                 <Text style={globalStyles.modalText}>
                   Are you sure you want to assign the inspector role to the following user?
                 </Text>
-                  <View style={globalStyles.listItem}>
-                    <View style={globalStyles.listItemLeft}>
-                      <Text style={globalStyles.listItemDate}>{selectedUser.id}</Text>
-                      <Text style={globalStyles.listItemPrimary}>
-                        {`${selectedUser.surname || ''}, ${selectedUser.firstname || ''} ${selectedUser.middleinitial || ''}`.trim()}
-                      </Text>
-                    </View>
+                <View style={globalStyles.listItem}>
+                  <View style={globalStyles.listItemLeft}>
+                    <Text style={globalStyles.listItemDate}>{selectedUser.id}</Text>
+                    <Text style={globalStyles.listItemPrimary}>
+                      {`${selectedUser.surname || ''}, ${selectedUser.firstname || ''} ${selectedUser.middleinitial || ''}`.trim()}
+                    </Text>
                   </View>
+                </View>
               </>
             )}
             <View style={globalStyles.modalButtons}>
@@ -772,6 +1019,235 @@ const AdminPanel = () => {
               <TouchableOpacity
                 style={[globalStyles.actionButton, { backgroundColor: '#3578E5' }]}
                 onPress={confirmAssignInspector}
+              >
+                <Text style={globalStyles.actionButtonText}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Drivers Section */}
+      <View style={globalStyles.sectionTitleContainer}>
+        <Text style={globalStyles.sectionTitle}>Drivers:</Text>
+        <TouchableOpacity onPress={openAddDriverModal}>
+          <Text style={globalStyles.sectionAddIcon}>+</Text>
+        </TouchableOpacity>
+      </View>
+      {drivers.map(driver => (
+        <View key={driver.id} style={globalStyles.listItem}>
+          <View style={globalStyles.listItemLeft}>
+            <Text style={globalStyles.listItemDate}>{driver.id}</Text>
+            <Text style={globalStyles.listItemPrimary}>
+              {`${driver.surname}, ${driver.firstname} ${driver.middleinitial || ''}`}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={globalStyles.redListButton}
+            onPress={() => confirmDeleteDriver(driver)}
+          >
+            <Text style={globalStyles.listButtonText}>Remove</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+
+      {/* Modal for Confirming Driver Deletion */}
+      <Modal visible={deleteDriverModalVisible} animationType="none" transparent={true}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalContainer}>
+            <Text style={globalStyles.modalTitle}>Confirm Deletion</Text>
+            {driverToDelete && (
+              <>
+                <Text style={globalStyles.modalText}>
+                  Are you sure you want to remove the following user as driver?
+                </Text>
+                <View style={globalStyles.listItem}>
+                  <View style={globalStyles.listItemLeft}>
+                    <Text style={globalStyles.listItemDate}>{driverToDelete.id}</Text>
+                    <Text style={globalStyles.listItemPrimary}>
+                      {`${driverToDelete.surname}, ${driverToDelete.firstname} ${driverToDelete.middleinitial || ''}`}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
+            <View style={globalStyles.modalButtons}>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]}
+                onPress={cancelDeleteDriver}
+              >
+                <Text style={globalStyles.actionButtonText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#3578E5' }]}
+                onPress={handleConfirmDeleteDriver}
+              >
+                <Text style={globalStyles.actionButtonText}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal for Adding Driver */}
+      <Modal visible={addDriverModalVisible} animationType="none" transparent={true}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={[globalStyles.modalContainer, { flex: 1 }]}>
+            <Text style={globalStyles.modalTitle}>Add Driver</Text>
+            <TextInput
+              style={globalStyles.input}
+              placeholder="Search"
+              placeholderTextColor="#999"
+              value={driverSearchQuery}
+              onChangeText={setDriverSearchQuery}
+            />
+            <View style={globalStyles.listContainer}>
+              <FlatList
+                data={filteredDriverUsers}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity onPress={() => selectDriverUser(item)}>
+                    <View style={globalStyles.listItem}>
+                      <View style={globalStyles.listItemLeft}>
+                        <Text style={globalStyles.listItemDate}>{item.id}</Text>
+                        <Text style={globalStyles.listItemPrimary}>
+                          {`${item.surname || ''}, ${item.firstname || ''} ${item.middleinitial || ''}`.trim() || item.username || 'Unnamed User'}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                contentContainerStyle={{ paddingBottom: 20 }}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+            <TouchableOpacity
+              style={[globalStyles.actionButton, { backgroundColor: '#e74c3c', justifyContent: 'center' }]}
+              onPress={closeAddDriverModal}
+            >
+              <Text style={globalStyles.actionButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Confirmation Modal for Adding Driver */}
+      <Modal visible={driverConfirmationModalVisible} animationType="none" transparent={true}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalContainer}>
+            <Text style={globalStyles.modalTitle}>Confirm</Text>
+            {selectedDriverUser && (
+              <>
+                <Text style={globalStyles.modalText}>
+                  Are you sure you want to assign the driver role to the following user?
+                </Text>
+                <View style={globalStyles.listItem}>
+                  <View style={globalStyles.listItemLeft}>
+                    <Text style={globalStyles.listItemDate}>{selectedDriverUser.id}</Text>
+                    <Text style={globalStyles.listItemPrimary}>
+                      {`${selectedDriverUser.surname || ''}, ${selectedDriverUser.firstname || ''} ${selectedDriverUser.middleinitial || ''}`.trim()}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
+            <View style={globalStyles.modalButtons}>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]}
+                onPress={cancelAssignDriver}
+              >
+                <Text style={globalStyles.actionButtonText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#3578E5' }]}
+                onPress={confirmAssignDriver}
+              >
+                <Text style={globalStyles.actionButtonText}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Shuttles Section */}
+      <View style={globalStyles.sectionTitleContainer}>
+        <Text style={globalStyles.sectionTitle}>Shuttles:</Text>
+        <TouchableOpacity onPress={openNewShuttleModal}>
+          <Text style={globalStyles.sectionAddIcon}>+</Text>
+        </TouchableOpacity>
+      </View>
+      {shuttles.map(shuttle => (
+        <View key={shuttle.id} style={globalStyles.listItem}>
+          <View style={globalStyles.listItemLeft}>
+            <Text style={globalStyles.listItemDate}>{shuttle.id}</Text>
+            <Text style={globalStyles.listItemPrimary}>{shuttle.plate_number}</Text>
+          </View>
+          <TouchableOpacity
+            style={globalStyles.redListButton}
+            onPress={() => confirmDeleteShuttle(shuttle)}
+          >
+            <Text style={globalStyles.listButtonText}>Remove</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+
+      {/* Modal for Adding New Shuttle */}
+      <Modal visible={newShuttleModalVisible} animationType="none" transparent={true}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalContainer}>
+            <Text style={globalStyles.modalTitle}>Add Shuttle</Text>
+            <TextInput
+              style={globalStyles.input}
+              placeholder="Plate Number"
+              value={newShuttlePlateNumber}
+              onChangeText={setNewShuttlePlateNumber}
+            />
+            <View style={globalStyles.modalButtons}>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]}
+                onPress={cancelNewShuttleModal}
+              >
+                <Text style={globalStyles.actionButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#3578E5' }]}
+                onPress={saveNewShuttle}
+              >
+                <Text style={globalStyles.actionButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal for Confirming Shuttle Deletion */}
+      <Modal visible={deleteShuttleModalVisible} animationType="none" transparent={true}>
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalContainer}>
+            <Text style={globalStyles.modalTitle}>Confirm Deletion</Text>
+            {shuttleToDelete && (
+              <>
+                <Text style={globalStyles.modalText}>
+                  Are you sure you want to remove the following shuttle?
+                </Text>
+                <View style={globalStyles.listItem}>
+                  <View style={globalStyles.listItemLeft}>
+                    <Text style={globalStyles.listItemDate}>{shuttleToDelete.id}</Text>
+                    <Text style={globalStyles.listItemPrimary}>{shuttleToDelete.plate_number}</Text>
+                  </View>
+                </View>
+              </>
+            )}
+            <View style={globalStyles.modalButtons}>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#e74c3c' }]}
+                onPress={cancelDeleteShuttle}
+              >
+                <Text style={globalStyles.actionButtonText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[globalStyles.actionButton, { backgroundColor: '#3578E5' }]}
+                onPress={handleConfirmDeleteShuttle}
               >
                 <Text style={globalStyles.actionButtonText}>Yes</Text>
               </TouchableOpacity>

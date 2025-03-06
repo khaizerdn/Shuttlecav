@@ -1,4 +1,3 @@
-// start-inspection.jsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -29,15 +28,12 @@ const formatDatetime = (datetimeStr) => {
 };
 
 export default function StartInspection() {
-  // Extract parameters from URL (driver, plate, origin, destination, added_rate)
   const { driver, plate, origin, destination, added_rate } = useLocalSearchParams();
   const { scanning, tagData, startScanning, endScanning, checkNfcEnabled, enableNFC } = useNFC();
 
-  // Generate unique keys for this shuttle's inspection state
   const inspectionKey = plate ? `inspectionStartTime_${plate}` : 'inspectionStartTime';
   const logsKey = plate ? `scannedLogs_${plate}` : 'scannedLogs';
 
-  // State variables for inspection, logs, modals, and manual add flag
   const [startTime, setStartTime] = useState(null);
   const [scannedLogs, setScannedLogs] = useState([]);
   const [showPassengerModal, setShowPassengerModal] = useState(false);
@@ -48,12 +44,10 @@ export default function StartInspection() {
   const [dbPassengerTypes, setDbPassengerTypes] = useState([]);
   const [manualAdd, setManualAdd] = useState(false);
 
-  // New states for inspector info and inspection overview receipt modal
   const [inspectorName, setInspectorName] = useState('N/A');
   const [inspectionOverview, setInspectionOverview] = useState(null);
   const [showInspectionOverviewModal, setShowInspectionOverviewModal] = useState(false);
 
-  // Fetch logged in user info (inspector) from the /user endpoint using the JWT token.
   useEffect(() => {
     async function fetchUser() {
       try {
@@ -75,7 +69,6 @@ export default function StartInspection() {
     fetchUser();
   }, []);
 
-  // Restore inspection state for this shuttle when the component mounts.
   useEffect(() => {
     async function restoreInspection() {
       const storedStartTime = await AsyncStorage.getItem(inspectionKey);
@@ -85,21 +78,18 @@ export default function StartInspection() {
         if (storedLogs) {
           setScannedLogs(JSON.parse(storedLogs));
         }
-        // Resume NFC scanning if an inspection is in progress.
         startScanning();
       }
     }
     restoreInspection();
   }, [inspectionKey, logsKey]);
 
-  // Persist scannedLogs to AsyncStorage when they change.
   useEffect(() => {
     if (startTime) {
       AsyncStorage.setItem(logsKey, JSON.stringify(scannedLogs));
     }
   }, [scannedLogs, startTime, logsKey]);
 
-  // Fetch passenger types from the backend.
   useEffect(() => {
     fetchPassengerTypes();
   }, []);
@@ -122,14 +112,12 @@ export default function StartInspection() {
     }
   };
 
-  // Open passenger modal when NFC tag data is detected.
   useEffect(() => {
     if (tagData && tagData.id && !showPassengerModal && !manualAdd) {
       setShowPassengerModal(true);
     }
   }, [tagData, showPassengerModal, manualAdd]);
 
-  // Handle selection of a passenger type.
   const handlePassengerSelect = async (passengerType) => {
     const typeInfo = dbPassengerTypes.find(item => item.passenger_type === passengerType);
     const passengerRate = typeInfo ? parseFloat(typeInfo.passenger_rate) : 0;
@@ -206,7 +194,6 @@ export default function StartInspection() {
     }
   };
 
-  // Start inspection: record the start time and begin NFC scanning.
   const handleStartInspection = async () => {
     const isNfcEnabled = await checkNfcEnabled();
     if (isNfcEnabled) {
@@ -219,20 +206,17 @@ export default function StartInspection() {
     }
   };
 
-  // End inspection: stop scanning, post inspection data, and show the receipt-style overview modal.
   const handleEndInspection = async () => {
     endScanning();
     const endTime = getMySQLDatetime();
     const storedStartTime = startTime || (await AsyncStorage.getItem(inspectionKey));
 
-    // Compute totals and passenger counts.
     const routeAddedRate = added_rate ? parseFloat(added_rate) : 0;
     const passengerCounts = scannedLogs.reduce((acc, log) => {
       acc[log.passengerType] = (acc[log.passengerType] || 0) + 1;
       return acc;
     }, {});
 
-    // Build inspection data payload.
     const inspectionData = {
       driver: driver || '',
       plate: plate || '',
@@ -265,7 +249,6 @@ export default function StartInspection() {
       passengerCounts: passengerCounts,
     };
 
-    // Add extra overview data with the receipt theme.
     const currentFareRates = dbPassengerTypes.map(item => ({
       passenger_type: item.passenger_type,
       current_fare_rate: parseFloat(item.passenger_rate) + routeAddedRate,
@@ -302,7 +285,6 @@ export default function StartInspection() {
     }
   };
 
-  // Cancel inspection: stop scanning and clear stored state.
   const handleCancelInspection = async () => {
     endScanning();
     setStartTime(null);
@@ -312,7 +294,6 @@ export default function StartInspection() {
     console.log('Inspection canceled');
   };
 
-  // Compute totals for display.
   const routeAddedRate = added_rate ? parseFloat(added_rate) : 0;
   const totalMoney = scannedLogs.reduce((acc, log) => {
     const typeInfo = dbPassengerTypes.find(item => item.passenger_type === log.passengerType);
@@ -597,7 +578,7 @@ export default function StartInspection() {
       />
 
       {/* Inspection Overview (Receipt) Modal */}
-      <Modal visible={showInspectionOverviewModal} animationType="slide" transparent={true}>
+      <Modal visible={showInspectionOverviewModal} animationType="none" transparent={true}>
         <ScrollView>
           <View style={globalStyles.modalOverlay}>
             <View style={styles.receiptWrapper}>
@@ -721,10 +702,19 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 24,
   },
+  receiptOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFF', // Solid black background to block the underlying screen
+  },
   receiptWrapper: {
     width: '90%',
     alignSelf: 'center',
     alignItems: 'stretch',
+    backgroundColor: '#fff', // Ensure wrapper matches receipt background
+    borderRadius: 10,
+    paddingBottom: 10, // Space for the button
   },
   receiptContainer: {
     padding: 20,
@@ -774,17 +764,5 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 6,
     textAlign: 'center',
-  },
-  searchContainer: {
-    width: '100%',
-    marginBottom: 10,
-  },
-  searchInput: {
-    backgroundColor: '#EAEAEA',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    height: 50,
-    fontSize: 16,
-    color: '#333',
   },
 });

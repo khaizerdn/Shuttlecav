@@ -1,4 +1,3 @@
-// activity-logs.jsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -17,10 +16,11 @@ import globalStyles from './globalstyles';
 const ActivityLogs = () => {
   const [searchText, setSearchText] = useState('');
   const [filterType, setFilterType] = useState('Per-Trip');
+  const [sortOrder, setSortOrder] = useState(null); // null (default), 'asc', or 'desc'
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [activityLogs, setActivityLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // New state for pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false);
   const [inspectionOverview, setInspectionOverview] = useState(null);
   const [showInspectionOverviewModal, setShowInspectionOverviewModal] = useState(false);
 
@@ -103,14 +103,14 @@ const ActivityLogs = () => {
       console.error('Error fetching activity logs:', error);
     } finally {
       setLoading(false);
-      setRefreshing(false); // Reset refreshing state after fetch completes
+      setRefreshing(false);
     }
   };
 
   // Handle pull-to-refresh
   const onRefresh = () => {
-    setRefreshing(true); // Show the refresh indicator
-    fetchActivityLogs(); // Trigger the data fetch
+    setRefreshing(true);
+    fetchActivityLogs();
   };
 
   // Fetch detailed inspection data for the receipt modal
@@ -148,10 +148,11 @@ const ActivityLogs = () => {
     );
   });
 
-  // Group logs based on the selected filter type
+  // Group logs based on the selected filter type and apply sorting
   const getFilteredLogs = () => {
+    let logs;
     if (filterType === 'Per-Trip') {
-      return filteredLogs.map(log => ({
+      logs = filteredLogs.map(log => ({
         id: log.id,
         date: formatFullDate(log.start_datetime),
         driver: log.driver,
@@ -160,66 +161,81 @@ const ActivityLogs = () => {
         route: log.origin && log.destination ? `${log.origin} to ${log.destination}` : '',
         totalClaimed: parseFloat(log.total_claimed_money).toFixed(2),
       }));
+    } else {
+      const groupedMap = new Map();
+      filteredLogs.forEach((log) => {
+        const dateObj = new Date(log.start_datetime);
+        const claimed = parseFloat(log.total_claimed_money);
+        let groupKey = '';
+        let displayDate = '';
+        switch (filterType) {
+          case 'Daily':
+            groupKey = formatDateOnly(log.start_datetime);
+            displayDate = formatDateOnly(log.start_datetime);
+            break;
+          case 'Weekly': {
+            const temp = new Date(dateObj);
+            const dayOfWeek = temp.getDay();
+            temp.setDate(temp.getDate() - dayOfWeek);
+            groupKey = temp.toISOString().substring(0, 10);
+            displayDate = getSundaySaturdayRangeLabel(dateObj);
+            break;
+          }
+          case 'Monthly': {
+            const monthLabel = getMonthlyLabel(dateObj);
+            groupKey = monthLabel;
+            displayDate = monthLabel;
+            break;
+          }
+          case 'Yearly': {
+            const yearLabel = getYearlyLabel(dateObj);
+            groupKey = yearLabel;
+            displayDate = yearLabel;
+            break;
+          }
+          default:
+            break;
+        }
+        if (!groupedMap.has(groupKey)) {
+          groupedMap.set(groupKey, {
+            id: groupKey,
+            date: displayDate,
+            totalClaimed: claimed,
+            driver: '',
+            plate: '',
+            inspector: '',
+            route: '',
+          });
+        } else {
+          const existing = groupedMap.get(groupKey);
+          existing.totalClaimed += claimed;
+        }
+      });
+      logs = Array.from(groupedMap.values()).map((item) => ({
+        ...item,
+        totalClaimed: item.totalClaimed.toFixed(2),
+      }));
     }
-    const groupedMap = new Map();
-    filteredLogs.forEach((log) => {
-      const dateObj = new Date(log.start_datetime);
-      const claimed = parseFloat(log.total_claimed_money);
-      let groupKey = '';
-      let displayDate = '';
-      switch (filterType) {
-        case 'Daily':
-          groupKey = formatDateOnly(log.start_datetime);
-          displayDate = formatDateOnly(log.start_datetime);
-          break;
-        case 'Weekly': {
-          const temp = new Date(dateObj);
-          const dayOfWeek = temp.getDay();
-          temp.setDate(temp.getDate() - dayOfWeek);
-          groupKey = temp.toISOString().substring(0, 10);
-          displayDate = getSundaySaturdayRangeLabel(dateObj);
-          break;
-        }
-        case 'Monthly': {
-          const monthLabel = getMonthlyLabel(dateObj);
-          groupKey = monthLabel;
-          displayDate = monthLabel;
-          break;
-        }
-        case 'Yearly': {
-          const yearLabel = getYearlyLabel(dateObj);
-          groupKey = yearLabel;
-          displayDate = yearLabel;
-          break;
-        }
-        default:
-          break;
-      }
-      if (!groupedMap.has(groupKey)) {
-        groupedMap.set(groupKey, {
-          id: groupKey,
-          date: displayDate,
-          totalClaimed: claimed,
-          driver: '',
-          plate: '',
-          inspector: '',
-          route: '',
-        });
-      } else {
-        const existing = groupedMap.get(groupKey);
-        existing.totalClaimed += claimed;
-      }
-    });
-    return Array.from(groupedMap.values()).map((item) => ({
-      ...item,
-      totalClaimed: item.totalClaimed.toFixed(2),
-    }));
+
+    // Apply sorting based on totalClaimed
+    if (sortOrder === 'asc') {
+      return logs.sort((a, b) => parseFloat(a.totalClaimed) - parseFloat(b.totalClaimed));
+    } else if (sortOrder === 'desc') {
+      return logs.sort((a, b) => parseFloat(b.totalClaimed) - parseFloat(a.totalClaimed));
+    }
+    return logs; // Default order (no sorting)
   };
 
   const finalLogs = getFilteredLogs();
 
   const handleFilterSelect = (type) => {
     setFilterType(type);
+    setSortOrder(null); // Reset sort order when changing filter type
+    setShowFilterModal(false);
+  };
+
+  const handleSortSelect = (order) => {
+    setSortOrder(order);
     setShowFilterModal(false);
   };
 
@@ -286,12 +302,12 @@ const ActivityLogs = () => {
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
-          refreshing={refreshing} // Add refreshing prop
-          onRefresh={onRefresh}   // Add onRefresh prop
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       </View>
 
-      {/* Modal for Filter Options */}
+      {/* Modal for Filter and Sort Options */}
       <Modal visible={showFilterModal} transparent animationType="none">
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalContainer}>
@@ -325,6 +341,20 @@ const ActivityLogs = () => {
               onPress={() => handleFilterSelect('Yearly')}
             >
               <Text style={globalStyles.buttonText}>Yearly</Text>
+            </TouchableOpacity>
+            <View style={styles.separator} />
+            <Text style={globalStyles.modalTitle}>Sort by Total Claimed Money</Text>
+            <TouchableOpacity
+              style={globalStyles.button}
+              onPress={() => handleSortSelect('asc')}
+            >
+              <Text style={globalStyles.buttonText}>Ascending</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={globalStyles.button}
+              onPress={() => handleSortSelect('desc')}
+            >
+              <Text style={globalStyles.buttonText}>Descending</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={globalStyles.cancelButton}
@@ -533,5 +563,10 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 6,
     textAlign: 'center',
+  },
+  separator: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    marginVertical: 10,
   },
 });

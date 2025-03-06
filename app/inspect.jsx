@@ -25,9 +25,12 @@ const Inspect = () => {
 
   // Add Shuttle modal state and fields
   const [addShuttleModalVisible, setAddShuttleModalVisible] = useState(false);
-  const [newFirstName, setNewFirstName] = useState('');
-  const [newLastName, setNewLastName] = useState('');
-  const [newPlate, setNewPlate] = useState('');
+  const [drivers, setDrivers] = useState([]);
+  const [selectedDriver, setSelectedDriver] = useState(null);
+  const [showDriverModal, setShowDriverModal] = useState(false);
+  const [plates, setPlates] = useState([]);
+  const [selectedPlate, setSelectedPlate] = useState(null);
+  const [showPlateModal, setShowPlateModal] = useState(false);
 
   // Routes state for selection
   const [routes, setRoutes] = useState([]);
@@ -44,16 +47,50 @@ const Inspect = () => {
       if (response.ok) {
         const data = await response.json();
         setRoutes(data);
-        // Removed default route selection to force manual selection
-        // if (data.length > 0 && !selectedRoute) {
-        //   setSelectedRoute(data[0].id);
-        // }
       } else {
         const errorData = await response.json();
         Alert.alert('Error', errorData.message || 'Failed to fetch routes');
       }
     } catch (error) {
       console.error('Error fetching routes:', error);
+    }
+  };
+
+  // Fetch drivers for the selection list
+  const fetchDrivers = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/drivers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDrivers(data);
+      } else {
+        const errorData = await response.json();
+        Alert.alert('Error', errorData.message || 'Failed to fetch drivers');
+      }
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+    }
+  };
+
+  // Fetch plate numbers for the selection list
+  const fetchPlates = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${config.API_URL}/shuttles-list`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPlates(data);
+      } else {
+        const errorData = await response.json();
+        Alert.alert('Error', errorData.message || 'Failed to fetch plate numbers');
+      }
+    } catch (error) {
+      console.error('Error fetching plate numbers:', error);
     }
   };
 
@@ -66,7 +103,6 @@ const Inspect = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        // Sort shuttles in descending order by id (assuming numeric timestamp)
         const sortedData = data.sort((a, b) => parseInt(b.id) - parseInt(a.id));
         setShuttleList(sortedData);
       } else {
@@ -86,11 +122,15 @@ const Inspect = () => {
 
   useEffect(() => {
     fetchRoutes();
+    fetchDrivers();
+    fetchPlates();
   }, []);
 
-  // Reset selected route whenever the Add Shuttle modal opens
+  // Reset selections whenever the Add Shuttle modal opens
   useEffect(() => {
     if (addShuttleModalVisible) {
+      setSelectedDriver(null);
+      setSelectedPlate(null);
       setSelectedRoute(null);
     }
   }, [addShuttleModalVisible]);
@@ -135,24 +175,27 @@ const Inspect = () => {
     setDeleteModalVisible(false);
   };
 
-  // Helper: Get route object by id
+  // Helper functions to get selected objects
   const getSelectedRouteObj = () => {
     return routes.find((r) => r.id === selectedRoute);
   };
 
-  // Add Shuttle API call (via modal)
-  // Now, instead of sending the full route details,
-  // we only send route_id.
+  const getSelectedDriverObj = () => {
+    return drivers.find((d) => d.id === selectedDriver);
+  };
+
+  const getSelectedPlateObj = () => {
+    return plates.find((p) => p.id === selectedPlate);
+  };
+
+  // Add Shuttle API call
   const addShuttle = async () => {
-    if (
-      newFirstName.trim() &&
-      newLastName.trim() &&
-      newPlate.trim() &&
-      selectedRoute
-    ) {
+    if (selectedDriver && selectedPlate && selectedRoute) {
+      const driver = getSelectedDriverObj();
+      const plate = getSelectedPlateObj();
       const newShuttleObj = {
-        shuttleDriver: `${newFirstName.trim()} ${newLastName.trim()}`,
-        shuttlePlatNumber: newPlate.trim(),
+        shuttleDriver: `${driver.firstname} ${driver.surname}`,
+        shuttlePlatNumber: plate.plate_number,
         route_id: selectedRoute,
       };
 
@@ -170,10 +213,8 @@ const Inspect = () => {
         if (response.ok) {
           Alert.alert('Success', 'Shuttle added successfully');
           setAddShuttleModalVisible(false);
-          // Clear fields
-          setNewFirstName('');
-          setNewLastName('');
-          setNewPlate('');
+          setSelectedDriver(null);
+          setSelectedPlate(null);
           setSelectedRoute(null);
           fetchShuttles();
         } else {
@@ -185,7 +226,7 @@ const Inspect = () => {
         Alert.alert('Error', 'An unexpected error occurred');
       }
     } else {
-      Alert.alert('Validation', 'Please fill out all fields');
+      Alert.alert('Validation', 'Please select a driver, shuttle, and route');
     }
   };
 
@@ -196,11 +237,6 @@ const Inspect = () => {
         <Text style={globalStyles.sectionTitle}>Select shuttle</Text>
         <TouchableOpacity
           onPress={() => {
-            // Reset fields and selected route every time the modal is opened
-            setNewFirstName('');
-            setNewLastName('');
-            setNewPlate('');
-            setSelectedRoute(null);
             setAddShuttleModalVisible(true);
           }}
         >
@@ -237,14 +273,12 @@ const Inspect = () => {
                     { flex: 1, flexDirection: 'row', alignItems: 'center' },
                   ]}
                 >
-
                   <View style={globalStyles.listLeftBox}>
                     <Text style={globalStyles.listLeftBoxSecondaryText}>PHP</Text>
                     <Text style={globalStyles.listLeftBoxPrimaryText}>
                       {parseFloat(item.added_rate).toFixed(2)}
                     </Text>
                   </View>
-
                   <View
                     style={[
                       globalStyles.listlocationContainer,
@@ -326,30 +360,71 @@ const Inspect = () => {
           <View style={globalStyles.modalOverlay}>
             <View style={globalStyles.modalContainer}>
               <Text style={globalStyles.modalTitle}>Add Shuttle</Text>
-              <Text style={globalStyles.modalText}>
-                Driver and Shuttle Information
-              </Text>
-              <TextInput
-                style={globalStyles.input}
-                placeholder="Driver's First Name"
-                value={newFirstName}
-                onChangeText={setNewFirstName}
-              />
-              <TextInput
-                style={globalStyles.input}
-                placeholder="Driver's Last Name"
-                value={newLastName}
-                onChangeText={setNewLastName}
-              />
-              <TextInput
-                style={globalStyles.input}
-                placeholder="Shuttle's Plate Number"
-                value={newPlate}
-                onChangeText={setNewPlate}
-              />
-              <View style={globalStyles.separator} />
-              <Text style={globalStyles.modalText}>Route</Text>
-              {/* Display Selected Route or a button to select one */}
+              <Text style={globalStyles.modalText}>Please select a driver, shuttle, and route.</Text>
+              {/* Driver Selection */}
+              {selectedDriver && getSelectedDriverObj() ? (
+                <View
+                  style={[
+                    globalStyles.listItem,
+                    { flexDirection: 'row', alignItems: 'center' },
+                  ]}
+                >
+                  <View style={globalStyles.listItemLeft}>
+                    <Text style={globalStyles.listItemPrimary}>
+                      {`${getSelectedDriverObj().surname}, ${getSelectedDriverObj().firstname} ${getSelectedDriverObj().middleinitial || ''}`}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={globalStyles.blueListButton}
+                    onPress={() => setShowDriverModal(true)}
+                  >
+                    <Text style={globalStyles.listButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    globalStyles.button,
+                    { alignSelf: 'center', marginVertical: 10 },
+                  ]}
+                  onPress={() => setShowDriverModal(true)}
+                >
+                  <Text style={globalStyles.buttonText}>Select Driver</Text>
+                </TouchableOpacity>
+              )}
+              {/* Plate Number Selection */}
+              {selectedPlate && getSelectedPlateObj() ? (
+                <View
+                  style={[
+                    globalStyles.listItem,
+                    { flexDirection: 'row', alignItems: 'center' },
+                  ]}
+                >
+                  <View style={globalStyles.listItemLeft}>
+                    <Text style={globalStyles.listItemPrimary}>
+                      {getSelectedPlateObj().plate_number}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={globalStyles.blueListButton}
+                    onPress={() => setShowPlateModal(true)}
+                  >
+                    <Text style={globalStyles.listButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    globalStyles.button,
+                    { alignSelf: 'center', marginVertical: 10 },
+                  ]}
+                  onPress={() => setShowPlateModal(true)}
+                >
+                  <Text style={globalStyles.buttonText}>Select Shuttle</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Route Selection */}
               {selectedRoute && getSelectedRouteObj() ? (
                 <View
                   style={[
@@ -408,6 +483,7 @@ const Inspect = () => {
                   <Text style={globalStyles.buttonText}>Select Route</Text>
                 </TouchableOpacity>
               )}
+
               <View style={globalStyles.modalButtons}>
                 <TouchableOpacity
                   style={[
@@ -428,6 +504,84 @@ const Inspect = () => {
                   <Text style={globalStyles.actionButtonText}>Add</Text>
                 </TouchableOpacity>
               </View>
+            </View>
+          </View>
+        </ScrollView>
+      </Modal>
+
+      {/* Driver Selection Modal */}
+      <Modal visible={showDriverModal} animationType="none" transparent={false}>
+        <ScrollView>
+          <View style={globalStyles.modalOverlay}>
+            <View style={globalStyles.modalContainer}>
+              <Text style={globalStyles.modalTitle}>Select Driver</Text>
+              {drivers.map((driver) => (
+                <TouchableOpacity
+                  key={driver.id}
+                  style={[
+                    globalStyles.listItem,
+                    { flexDirection: 'row', alignItems: 'center' },
+                  ]}
+                  onPress={() => {
+                    setSelectedDriver(driver.id);
+                    setShowDriverModal(false);
+                  }}
+                >
+                  <View style={globalStyles.listItemLeft}>
+                    <Text style={globalStyles.listItemPrimary}>
+                      {`${driver.surname}, ${driver.firstname} ${driver.middleinitial || ''}`}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={[
+                  globalStyles.actionButton,
+                  { backgroundColor: '#e74c3c', marginTop: 10, alignSelf: 'center' },
+                ]}
+                onPress={() => setShowDriverModal(false)}
+              >
+                <Text style={globalStyles.actionButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </Modal>
+
+      {/* Plate Number Selection Modal */}
+      <Modal visible={showPlateModal} animationType="none" transparent={false}>
+        <ScrollView>
+          <View style={globalStyles.modalOverlay}>
+            <View style={globalStyles.modalContainer}>
+              <Text style={globalStyles.modalTitle}>Select Plate Number</Text>
+              {plates.map((plate) => (
+                <TouchableOpacity
+                  key={plate.id}
+                  style={[
+                    globalStyles.listItem,
+                    { flexDirection: 'row', alignItems: 'center' },
+                  ]}
+                  onPress={() => {
+                    setSelectedPlate(plate.id);
+                    setShowPlateModal(false);
+                  }}
+                >
+                  <View style={globalStyles.listItemLeft}>
+                    <Text style={globalStyles.listItemPrimary}>
+                      {plate.plate_number}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={[
+                  globalStyles.actionButton,
+                  { backgroundColor: '#e74c3c', marginTop: 10, alignSelf: 'center' },
+                ]}
+                onPress={() => setShowPlateModal(false)}
+              >
+                <Text style={globalStyles.actionButtonText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -486,6 +640,15 @@ const Inspect = () => {
                   </View>
                 </TouchableOpacity>
               ))}
+              <TouchableOpacity
+                style={[
+                  globalStyles.actionButton,
+                  { backgroundColor: '#e74c3c', marginTop: 10, alignSelf: 'center' },
+                ]}
+                onPress={() => setShowRouteModal(false)}
+              >
+                <Text style={globalStyles.actionButtonText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>

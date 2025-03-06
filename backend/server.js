@@ -699,11 +699,11 @@ app.get('/activity-logs', authenticateToken, (req, res) => {
 
 // Endpoint to get all users
 app.get('/fetchusers', authenticateToken, (req, res) => {
-  const userId = req.user.userId; // Assuming authenticateToken attaches the user ID to req.user
+  const userId = req.user.userId; // Current user's ID from the token
   const query = `
     SELECT id, username, surname, firstname, middleinitial 
     FROM users 
-    WHERE (role NOT IN ('inspector', 'admin') OR role IS NULL) 
+    WHERE (role NOT IN ('inspector', 'admin', 'driver') OR role IS NULL) 
     AND id != ?
   `;
   db.query(query, [userId], (err, result) => {
@@ -711,7 +711,7 @@ app.get('/fetchusers', authenticateToken, (req, res) => {
       console.error('Database error:', err);
       return res.status(500).json({ message: 'Error fetching users' });
     }
-    console.log('Fetched users (excluding inspectors, admins, and current user):', result); // Debug log
+    console.log('Fetched users (excluding inspectors, admins, drivers, and current user):', result);
     return res.status(200).json(result);
   });
 });
@@ -757,6 +757,84 @@ app.put('/users/:id/role', authenticateToken, (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     return res.status(200).json({ message: 'User role updated successfully' });
+  });
+});
+
+// Get all drivers
+app.get('/drivers', authenticateToken, (req, res) => {
+  const query = 'SELECT id, firstname, surname, middleinitial FROM users WHERE role = "driver"';
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ message: 'Error fetching drivers' });
+    }
+    return res.status(200).json(result);
+  });
+});
+
+// Modify /fetchusers to exclude drivers as well
+app.get('/fetchusers', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const query = `
+    SELECT id, username, surname, firstname, middleinitial 
+    FROM users 
+    WHERE (role NOT IN ('inspector', 'admin', 'driver') OR role IS NULL) 
+    AND id != ?
+  `;
+  db.query(query, [userId], (err, result) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ message: 'Error fetching users' });
+    }
+    return res.status(200).json(result);
+  });
+});
+
+// Get all shuttles
+app.get('/shuttles-list', authenticateToken, (req, res) => {
+  const query = 'SELECT id, plate_number FROM shuttles';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching shuttles:', err);
+      return res.status(500).json({ message: 'Error fetching shuttles' });
+    }
+    return res.status(200).json(results);
+  });
+});
+
+// Add a new shuttle
+app.post('/shuttles-list', authenticateToken, (req, res) => {
+  const { plate_number } = req.body;
+  if (!plate_number) {
+    return res.status(400).json({ message: 'Plate number is required' });
+  }
+  const id = intformat(flakeIdGen.next(), 'dec'); // Generate unique ID
+  const query = 'INSERT INTO shuttles (id, plate_number) VALUES (?, ?)';
+  db.query(query, [id, plate_number], (err, result) => {
+    if (err) {
+      console.error('Error adding shuttle:', err);
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(400).json({ message: 'Plate number already exists' });
+      }
+      return res.status(500).json({ message: 'Error adding shuttle' });
+    }
+    return res.status(200).json({ message: 'Shuttle added successfully', id });
+  });
+});
+
+// Delete a shuttle
+app.delete('/shuttles-list/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM shuttles WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting shuttle:', err);
+      return res.status(500).json({ message: 'Error deleting shuttle' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Shuttle not found' });
+    }
+    return res.status(200).json({ message: 'Shuttle deleted successfully' });
   });
 });
 
