@@ -21,14 +21,13 @@ Soon:
 Note:
 
 Done:
-- In Start Inspection page, at the right side of the "Recent Logs:", a button when clicked, it will show the details of the passenger rates. // Ilagay sa pag select ng passenger type, kapag cinlick yung + button sa start inepsction page.
-[Done. Ang nakalagay sa Rate ay passenger rate + added route. Para mas madaling malaman kung magkano ang sisingilin ni inspector sa current settings ng iniiinspect niya.]
-- Admin have the ability to role an account. // Add to admin panel. [Done. Admin can now add inspector]
-- In Transaction History page, Activity Logs page, and Inspection Logs page, when one of the list is clicked, it will show more details such as the reference number, driver, inspector, plate, etc. // Add [Done]
-- Add an MPIN (4 digit number) to access the account. For efficient user log in.// Add and remove password. [Done]
-- Have a pull to refresh in the pages or logs. // Add [Done]
+- In Start Inspection page, at the right side of the "Recent Logs:", a button when clicked, it will show the details of the passenger rates. [Ang nakalagay sa Rate ay passenger rate + added route. Para mas madaling malaman kung magkano ang sisingilin ni inspector sa current settings ng iniiinspect niya.]
+- Admin have the ability to role an account. [dmin can now add inspector]
+- In Transaction History page, Activity Logs page, and Inspection Logs page, when one of the list is clicked, it will show more details such as the reference number, driver, inspector, plate, etc.
+- Add an MPIN (4 digit number) to access the account. For efficient user log in.
+- Have a pull to refresh in the pages or logs.
 - IOS notch overlapping icons at the top. [Di ko na po gagawin kasi limit sa papers.]
 - Carlo phone. Android Version 14 navigating to NFC to enable not working. [Minsan nararanasan ko ito at ang ginagawa ko lang is nirerestart yung app. Probably ang problem is sa pag bundle.]
-- Admin have the ability to add shuttle and driver do the inspector can just select through a dropdown in creating a shuttle. Add search. [Done]
-- Change password to mpin or 4 digit pin. [Done]
-- Add filter para makita ang may pinakadaming kita. // Add [Done]
+- Admin have the ability to add shuttle and driver do the inspector can just select through a dropdown in creating a shuttle. Add search.
+- Change password to mpin or 4 digit pin.
+- Add filter para makita ang may pinakadaming kita.

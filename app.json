@@ -23,7 +23,22 @@
       "permissions": [
         "NFC"
       ],
-      "package": "com.yourcompany.shuttlecav"
+      "package": "com.yourcompany.shuttlecav",
+      "intentFilters": [
+        {
+          "action": "android.intent.action.MAIN",
+          "category": ["android.intent.category.LAUNCHER"]
+        },
+        {
+          "action": "android.intent.action.VIEW",
+          "category": ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"],
+          "data": [
+            { "scheme": "myapp" },
+            { "scheme": "com.yourcompany.shuttlecav" },
+            { "scheme": "exp+shuttlecav" }
+          ]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -40,7 +55,21 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesFeature": [
+              {
+                "name": "android.hardware.nfc",
+                "required": false
+              }
+            ]
+          }
+        }
+      ],
+      "react-native-nfc-manager" // Added config plugin
     ],
     "experiments": {
       "typedRoutes": true
