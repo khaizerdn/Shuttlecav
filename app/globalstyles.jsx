@@ -113,7 +113,7 @@ const globalStyles = StyleSheet.create({
     width: 60,
     height: 60,
     backgroundColor: '#E5E5E5',
-    borderRadius: 5,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },

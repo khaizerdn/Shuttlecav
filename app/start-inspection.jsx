@@ -476,21 +476,21 @@ export default function StartInspection() {
                 return (
                   <View key={item.id} style={globalStyles.listItem}>
                     <View style={globalStyles.listItemLeftRow}>
-                      <View style={[globalStyles.listLeftBox, { marginRight: 10 }]}>
+                      <Text style={[globalStyles.listItemPrimary, { margin: 0 }, { flex: 1 }]}>
+                        {item.passenger_type}
+                      </Text>
+                      <View style={[globalStyles.listLeftBox, { marginLeft: 10 }]}>
                         <Text style={globalStyles.listLeftBoxSecondaryText}>Rate</Text>
                         <Text style={globalStyles.listLeftBoxPrimaryText}>
                           {fare.toFixed(2)}
                         </Text>
                       </View>
-                      <View style={[globalStyles.listLeftBox, { marginRight: 10 }]}>
+                      <View style={[globalStyles.listLeftBox, { marginLeft: 10 }]}>
                         <Text style={globalStyles.listLeftBoxSecondaryText}>Count</Text>
                         <Text style={globalStyles.listLeftBoxPrimaryText}>
                           {passengerCounts[item.passenger_type]}
                         </Text>
                       </View>
-                      <Text style={[globalStyles.listItemPrimary, { marginLeft: 10 }]}>
-                        {item.passenger_type}
-                      </Text>
                     </View>
                   </View>
                 );

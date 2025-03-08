@@ -31,3 +31,7 @@ Done:
 - Admin have the ability to add shuttle and driver do the inspector can just select through a dropdown in creating a shuttle. Add search.
 - Change password to mpin or 4 digit pin.
 - Add filter para makita ang may pinakadaming kita.
+
+
+Question:
+- Pano kapag nakalimutan ng user ang username or password? Ano ang way nila para ma retrieve ulit ang account?
