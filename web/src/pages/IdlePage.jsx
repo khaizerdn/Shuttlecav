@@ -1,13 +1,10 @@
 // src/pages/IdlePage.jsx
-import { useNavigate } from 'react-router-dom';
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
-const IdlePage = () => {
-  const navigate = useNavigate();
-
+const IdlePage = ({ onNext }) => {
   const handleClick = () => {
-    navigate('/select-amount');
+    onNext({});
   };
 
   return (
@@ -18,7 +15,7 @@ const IdlePage = () => {
       role="button"
       tabIndex={0}
       style={{
-        backgroundColor: '#fff', // Override the default flex layout for full-screen
+        backgroundColor: '#fff',
         cursor: 'pointer',
         userSelect: 'none',
         display: 'flex',
@@ -27,25 +24,25 @@ const IdlePage = () => {
         alignItems: 'center',
       }}
     >
-        <img
-          src={shuttleCavLogo}
-          alt="ShuttleCav Logo"
-          style={{
-            width: '400px',
-            marginBottom: '20px',
-          }}
-        />
-        <p
-          style={{
-            fontSize: '2rem',
-            fontWeight: 'bold',
-            color: '#333',
-            textTransform: 'uppercase',
-          }}
-        >
-          Tap Anywhere to Start
-        </p>
-      </div>
+      <img
+        src={shuttleCavLogo}
+        alt="ShuttleCav Logo"
+        style={{
+          width: '400px',
+          marginBottom: '20px',
+        }}
+      />
+      <p
+        style={{
+          fontSize: '2rem',
+          fontWeight: 'bold',
+          color: '#333',
+          textTransform: 'uppercase',
+        }}
+      >
+        Tap Anywhere to Start
+      </p>
+    </div>
   );
 };
 

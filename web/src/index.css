@@ -92,11 +92,16 @@ html, body {
   border-radius: 20px;
   cursor: pointer;
   color: #1E4D8C;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.1s; /* Added transform for click effect */
 }
 
 .amount-button:hover {
   background-color: #D0D0D0;
+}
+
+.amount-button:active {
+  background-color: #C0C0C0; /* Darker shade when clicked */
+  transform: scale(0.95); /* Slight shrink effect */
 }
 
 /* Keypad grid (used in CustomAmount) */
@@ -125,12 +130,15 @@ html, body {
   border-radius: 20px;
   cursor: pointer;
   color: #1E4D8C;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.1s; /* Added transform for click effect */
 }
+
+/* Inherit hover and active states from .amount-button, no need to repeat */
 
 /* Amount display (used in CustomAmount) */
 .amount-display {
   width: 500px;
+  height: 80px;
   padding: 20px;
   font-size: 2.5rem;
   font-weight: bold;
@@ -152,11 +160,16 @@ html, body {
   cursor: pointer;
   color: #fff;
   text-transform: uppercase;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.1s; /* Added transform for click effect */
 }
 
 .enter-other-button:hover {
   background-color: #2A5A9E;
+}
+
+.enter-other-button:active {
+  background-color: #153A6F; /* Darker shade when clicked */
+  transform: scale(0.95); /* Slight shrink effect */
 }
 
 /* Responsive design for smaller screens */

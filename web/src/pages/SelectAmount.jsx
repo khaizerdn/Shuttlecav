@@ -1,11 +1,8 @@
 // src/pages/SelectAmount.jsx
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
-import { useNavigate } from 'react-router-dom';
 import '../index.css';
 
-const SelectAmount = () => {
-  const navigate = useNavigate();
-
+const SelectAmount = ({ onNext }) => {
   const amounts = [
     { left: 100, right: 500 },
     { left: 200, right: 1000 },
@@ -14,16 +11,15 @@ const SelectAmount = () => {
   ];
 
   const handleAmountSelect = (amount) => {
-    console.log(`Selected amount: ${amount}`);
+    onNext({ amount });
   };
 
   const handleEnterOtherAmount = () => {
-    navigate('/custom-amount'); // Navigate to the new page
+    onNext({ custom: true });
   };
 
   return (
     <div className="page-container">
-      {/* Left Container */}
       <div className="left-container">
         <div className="logo-container">
           <img src={shuttleCavLogo} alt="ShuttleCav Logo" />
@@ -33,8 +29,6 @@ const SelectAmount = () => {
           <p>Select the amount to load</p>
         </div>
       </div>
-
-      {/* Right Container */}
       <div className="right-container">
         <div className="amount-grid">
           {amounts.map((amountPair, index) => (
