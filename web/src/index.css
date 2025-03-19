@@ -1,0 +1,10 @@
+:root {
+  font-family: Inter, sans-serif;
+
+  background-color: #FFFFFF;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
