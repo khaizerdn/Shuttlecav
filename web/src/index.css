@@ -1,10 +1,203 @@
-:root {
-  font-family: Inter, sans-serif;
+/* src/index.css */
 
-  background-color: #FFFFFF;
+/* Reset default margins and ensure full height */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+html, body {
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
+
+/* Main layout container */
+.page-container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+/* Left container (blue background) */
+.left-container {
+  flex: 0 0 30%; /* 30% width */
+  background-color: #1E4D8C; /* Blue background */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #fff;
+}
+
+/* Logo container inside left container */
+.logo-container {
+  margin-bottom: 20px;
+}
+
+.logo-container img {
+  width: 200px; /* Adjust size as needed */
+}
+
+/* Description container inside left container */
+.description-container {
+  text-align: center;
+}
+
+.description-container h1 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.description-container p {
+  font-size: 1.2rem;
+  text-transform: uppercase;
+}
+
+/* Right container (main content) */
+.right-container {
+  flex: 0 0 70%; /* 70% width */
+  background-color: #fff; /* White background for contrast */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Amount buttons grid (used in SelectAmount) */
+.amount-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+  width: 700px;
+}
+
+.amount-row {
+  display: flex;
+  gap: 20px;
+}
+
+.amount-button {
+  width: 48%;
+  padding: 20px;
+  font-size: 3rem;
+  font-weight: bold;
+  background-color: #E0E0E0;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  color: #1E4D8C;
+  transition: background-color 0.3s;
+}
+
+.amount-button:hover {
+  background-color: #D0D0D0;
+}
+
+/* Keypad grid (used in CustomAmount) */
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 columns */
+  grid-template-rows: repeat(4, 1fr); /* Explicitly 4 rows */
+  gap: 20px;
+  margin-bottom: 20px;
+  width: 500px; /* Adjust width to fit the keypad */
+}
+
+.keypad-row {
+  display: flex;
+  gap: 20px;
+}
+
+/* Adjust the amount-button for keypad to fit the 3-column layout */
+.keypad-grid .amount-button {
+  width: 100%;
+  padding: 20px;
+  font-size: 3rem;
+  font-weight: bold;
+  background-color: #E0E0E0;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  color: #1E4D8C;
+  transition: background-color 0.3s;
+}
+
+/* Amount display (used in CustomAmount) */
+.amount-display {
+  width: 500px;
+  padding: 20px;
+  font-size: 2.5rem;
+  font-weight: bold;
+  background-color: #E0E0E0;
+  border-radius: 20px;
+  text-align: right;
+  margin-bottom: 20px;
+  color: #1E4D8C;
+}
+
+.enter-other-button {
+  width: 500px;
+  padding: 20px;
+  font-size: 2rem;
+  font-weight: bold;
+  background-color: #1E4D8C;
+  border: 2px solid #fff;
+  border-radius: 20px;
+  cursor: pointer;
+  color: #fff;
+  text-transform: uppercase;
+  transition: background-color 0.3s;
+}
+
+.enter-other-button:hover {
+  background-color: #2A5A9E;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .page-container {
+    flex-direction: column;
+  }
+
+  .left-container {
+    flex: 0 0 40%; /* 40% height on mobile */
+  }
+
+  .right-container {
+    flex: 0 0 60%; /* 60% height on mobile */
+  }
+
+  .logo-container img {
+    width: 150px; /* Smaller logo on mobile */
+  }
+
+  .description-container h1 {
+    font-size: 2rem;
+  }
+
+  .description-container p {
+    font-size: 1rem;
+  }
+
+  .amount-grid {
+    width: 80%;
+  }
+
+  .keypad-grid {
+    width: 80%;
+  }
+
+  .amount-display {
+    width: 80%;
+  }
+
+  .enter-other-button {
+    width: 80%;
+  }
 }
