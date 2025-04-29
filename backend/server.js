@@ -1,10 +1,11 @@
 const express = require('express');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const morgan = require('morgan');
 dotenv.config();
 
 const app = express();
@@ -13,6 +14,7 @@ const port = 5000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(morgan('combined'));
 
 // MySQL connection with settings to support BIGINT as string
 const db = mysql.createConnection({
@@ -20,6 +22,9 @@ const db = mysql.createConnection({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
   supportBigNumbers: true,
   bigNumberStrings: true
 });
@@ -945,6 +950,10 @@ app.get('/inspections/:id', authenticateToken, (req, res) => {
       });
     });
   });
+});
+
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'Welcome to Shuttlecav API', status: 'running' });
 });
 
 // Start the server
