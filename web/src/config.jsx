@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 
 const configSettings = {
-  idleTimeout: 3000, // 60 seconds in milliseconds
+  idleTimeout: 60000, // 60 seconds in milliseconds
   showTimers: true, // Must be true to show the timer
 };
 

@@ -2,7 +2,7 @@
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
-const ConfirmationPage = ({ amount, onNext }) => {
+const ConfirmationPage = ({ amount, onNext, paymentStatus }) => {
   const handleConfirm = () => {
     onNext({});
   };
@@ -22,9 +22,21 @@ const ConfirmationPage = ({ amount, onNext }) => {
         <div className="amount-display">
           {amount.toFixed(2)}
         </div>
-        <button onClick={handleConfirm} className="enter-other-button">
-          Confirm Payment
-        </button>
+        {paymentStatus ? (
+          <div className="payment-status">
+            {paymentStatus === "success" 
+              ? "Payment Successful!" 
+              : paymentStatus}
+          </div>
+        ) : (
+          <button 
+            onClick={handleConfirm} 
+            className="enter-other-button"
+            disabled={paymentStatus !== null}
+          >
+            Confirm Payment
+          </button>
+        )}
       </div>
     </div>
   );
