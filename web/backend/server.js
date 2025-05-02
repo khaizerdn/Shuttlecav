@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
+import MFRC522 from 'mfrc522-rpi';
 
 dotenv.config();
 
@@ -17,6 +18,9 @@ const dbConfig = {
   database: process.env.DB_NAME
 };
 
+// Initialize MFRC522
+const mfrc522 = new MFRC522();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -26,6 +30,33 @@ const pool = mysql.createPool(dbConfig);
 
 app.get("/", (req, res) => {
   res.send("Backend is running...");
+});
+
+// Endpoint to read RFID tag
+app.get("/api/read-rfid", async (req, res) => {
+  try {
+    // Reset the MFRC522
+    mfrc522.reset();
+
+    // Scan for cards
+    let response = mfrc522.findCard();
+    if (!response.status) {
+      return res.json({ success: false, message: 'No card found' });
+    }
+
+    // Get the UID of the card
+    response = mfrc522.getUid();
+    if (!response.status) {
+      return res.json({ success: false, message: 'Unable to read UID' });
+    }
+
+    const uid = response.data;
+    const uidString = uid.join(':');
+
+    res.json({ success: true, tag_id: uidString });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 // Endpoint to add amount to user's balance
