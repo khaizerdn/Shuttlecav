@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 
 const RFIDScanPage = ({ onNext }) => {
   const [status, setStatus] = useState('Click "Start Scan" to begin');
-  const [serialPort, setSerialPort] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
 
   const styles = {
@@ -27,56 +26,38 @@ const RFIDScanPage = ({ onNext }) => {
   };
 
   const startScanning = async () => {
-    let port;
-    let reader;
+    setIsScanning(true);
+    setStatus('Waiting for RFID scan...');
 
     try {
-      port = await navigator.serial.requestPort({});
-      await port.open({ baudRate: 9600 });
+      const response = await fetch('http://localhost:5000/api/read-rfid', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-      setSerialPort(port);
-      setStatus('Waiting for RFID scan...');
-      setIsScanning(true);
+      const data = await response.json();
 
-      reader = port.readable.getReader();
-
-      while (port.readable) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const text = new TextDecoder().decode(value);
-        const lines = text.split('\n').filter(line => line.trim());
-
-        for (const line of lines) {
-          if (line.startsWith('RFID:')) {
-            const rfid = line.replace('RFID:', '').trim();
-            sessionStorage.setItem('rfidData', rfid);
-            setStatus('RFID scanned successfully!');
-            setTimeout(() => {
-              onNext({ rfid });
-            }, 1000);
-            return;
-          } else if (line === 'READY') {
-            setStatus('Waiting for RFID scan...');
-          }
-        }
+      if (data.success) {
+        const rfid = data.tag_id;
+        sessionStorage.setItem('rfidData', rfid);
+        setStatus('RFID scanned successfully!');
+        setTimeout(() => {
+          onNext({ rfid });
+        }, 1000);
+      } else {
+        throw new Error(data.message || 'Failed to read RFID');
       }
     } catch (error) {
       setStatus(`Error: ${error.message}. Please try again.`);
       setIsScanning(false);
-    } finally {
-      if (reader) reader.releaseLock();
-      if (port) await port.close().catch(() => {});
     }
   };
 
   useEffect(() => {
     return () => {
-      if (serialPort) {
-        serialPort.close().catch(() => {});
-      }
+      // No cleanup needed for API-based scanning
     };
-  }, [serialPort]);
+  }, []);
 
   return (
     <div style={styles.container}>
