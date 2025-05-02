@@ -5,7 +5,6 @@ const RFIDScanPage = ({ onNext }) => {
   const [serialPort, setSerialPort] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
 
-  // Styles object
   const styles = {
     container: {
       display: 'flex',
@@ -27,13 +26,11 @@ const RFIDScanPage = ({ onNext }) => {
     },
   };
 
-  // Handle serial connection and scanning
   const startScanning = async () => {
     let port;
     let reader;
 
     try {
-      // Request serial port from user after button click
       port = await navigator.serial.requestPort({});
       await port.open({ baudRate: 9600 });
 
@@ -41,7 +38,6 @@ const RFIDScanPage = ({ onNext }) => {
       setStatus('Waiting for RFID scan...');
       setIsScanning(true);
 
-      // Read data from Arduino
       reader = port.readable.getReader();
 
       while (port.readable) {
@@ -54,13 +50,12 @@ const RFIDScanPage = ({ onNext }) => {
         for (const line of lines) {
           if (line.startsWith('RFID:')) {
             const rfid = line.replace('RFID:', '').trim();
-            // Store RFID in sessionStorage
             sessionStorage.setItem('rfidData', rfid);
             setStatus('RFID scanned successfully!');
             setTimeout(() => {
               onNext({ rfid });
             }, 1000);
-            return; // Exit after successful scan
+            return;
           } else if (line === 'READY') {
             setStatus('Waiting for RFID scan...');
           }
@@ -70,17 +65,15 @@ const RFIDScanPage = ({ onNext }) => {
       setStatus(`Error: ${error.message}. Please try again.`);
       setIsScanning(false);
     } finally {
-      // Cleanup
       if (reader) reader.releaseLock();
-      if (port) await port.close().catch(() => {}); // Ignore closure errors
+      if (port) await port.close().catch(() => {});
     }
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (serialPort) {
-        serialPort.close().catch(() => {}); // Clean up port if component unmounts
+        serialPort.close().catch(() => {});
       }
     };
   }, [serialPort]);
@@ -103,6 +96,12 @@ const RFIDScanPage = ({ onNext }) => {
           Retry
         </button>
       )}
+      <button
+        style={styles.button}
+        onClick={() => onNext({ manualEntry: true })}
+      >
+        Enter Tag ID Manually
+      </button>
     </div>
   );
 };

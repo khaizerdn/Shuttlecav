@@ -1,7 +1,7 @@
-// src/components/PaymentSteps.jsx
 import React, { useState, useEffect } from 'react';
 import IdlePage from './IdlePage';
 import RFIDScanPage from './RFIDScanPage';
+import ManualTagEntry from './ManualTagEntry';
 import SelectAmount from './SelectAmount';
 import CustomAmount from './CustomAmount';
 import ConfirmationPage from './ConfirmationPage';
@@ -49,31 +49,38 @@ const PaymentSteps = () => {
       
       if (data.success) {
         setPaymentStatus("success");
-        setTimeout(() => resetState(), 2000); // Reset after 2 seconds
+        setTimeout(() => resetState(), 2000);
       } else {
         throw new Error(data.message);
       }
     } catch (error) {
       setPaymentStatus(`Error: ${error.message}`);
-      setTimeout(() => setPaymentStatus(null), 3000); // Clear error after 3 seconds
+      setTimeout(() => setPaymentStatus(null), 3000);
     }
   };
 
   const handleNext = (data) => {
     if (currentStep === 1) {
       setCurrentStep(2);
-    } else if (currentStep === 2 && data.rfid) {
+    } else if (currentStep === 2) {
+      if (data.rfid) {
+        setRfidData(data.rfid);
+        setCurrentStep(4);
+      } else if (data.manualEntry) {
+        setCurrentStep(3);
+      }
+    } else if (currentStep === 3 && data.rfid) {
       setRfidData(data.rfid);
-      setCurrentStep(3);
-    } else if (currentStep === 3 && data.amount) {
-      setSelectedAmount(data.amount);
-      setCurrentStep(5);
-    } else if (currentStep === 3 && data.custom) {
       setCurrentStep(4);
     } else if (currentStep === 4 && data.amount) {
       setSelectedAmount(data.amount);
+      setCurrentStep(6);
+    } else if (currentStep === 4 && data.custom) {
       setCurrentStep(5);
-    } else if (currentStep === 5) {
+    } else if (currentStep === 5 && data.amount) {
+      setSelectedAmount(data.amount);
+      setCurrentStep(6);
+    } else if (currentStep === 6) {
       processPayment();
     }
   };
@@ -83,9 +90,10 @@ const PaymentSteps = () => {
       <IdleTimeoutHandler />
       {currentStep === 1 && <IdlePage onNext={handleNext} />}
       {currentStep === 2 && <RFIDScanPage onNext={handleNext} />}
-      {currentStep === 3 && <SelectAmount onNext={handleNext} />}
-      {currentStep === 4 && <CustomAmount onNext={handleNext} />}
-      {currentStep === 5 && (
+      {currentStep === 3 && <ManualTagEntry onNext={handleNext} />}
+      {currentStep === 4 && <SelectAmount onNext={handleNext} />}
+      {currentStep === 5 && <CustomAmount onNext={handleNext} />}
+      {currentStep === 6 && (
         <ConfirmationPage 
           amount={selectedAmount} 
           onNext={handleNext}
