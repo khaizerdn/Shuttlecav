@@ -11,10 +11,10 @@ const PORT = process.env.PORT || 5000;
 
 // Database configuration
 const dbConfig = {
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "shuttlecav"
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME
 };
 
 // Middleware
