@@ -26,38 +26,36 @@ const RFIDScanPage = ({ onNext }) => {
   };
 
   const startScanning = async () => {
-    setIsScanning(true);
     setStatus('Waiting for RFID scan...');
-
-    try {
-      const response = await fetch('http://localhost:5000/api/read-rfid', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        const rfid = data.tag_id;
-        sessionStorage.setItem('rfidData', rfid);
-        setStatus('RFID scanned successfully!');
-        setTimeout(() => {
-          onNext({ rfid });
-        }, 1000);
-      } else {
-        throw new Error(data.message || 'Failed to read RFID');
-      }
-    } catch (error) {
-      setStatus(`Error: ${error.message}. Please try again.`);
-      setIsScanning(false);
-    }
+    setIsScanning(true);
   };
 
   useEffect(() => {
-    return () => {
-      // No cleanup needed for API-based scanning
-    };
-  }, []);
+    let interval;
+    if (isScanning) {
+      interval = setInterval(async () => {
+        try {
+          const response = await fetch('http://localhost:5000/api/read-rfid');
+          const data = await response.json();
+          if (data.success && data.tag_id) {
+            sessionStorage.setItem('rfidData', data.tag_id);
+            setStatus('RFID scanned successfully!');
+            setIsScanning(false);
+            setTimeout(() => {
+              onNext({ rfid: data.tag_id });
+            }, 1000);
+          } else if (!data.success && data.message !== 'No card found') {
+            setStatus(`Error: ${data.message}. Please try again.`);
+            setIsScanning(false);
+          }
+        } catch (error) {
+          setStatus(`Error: ${error.message}. Please try again.`);
+          setIsScanning(false);
+        }
+      }, 1000); // Poll every 1 second
+    }
+    return () => clearInterval(interval);
+  }, [isScanning, onNext]);
 
   return (
     <div style={styles.container}>
