@@ -31,30 +31,36 @@ const RFIDScanPage = ({ onNext }) => {
   };
 
   useEffect(() => {
-    let interval;
+    let intervalId;
     if (isScanning) {
-      interval = setInterval(async () => {
+      intervalId = setInterval(async () => {
         try {
           const response = await fetch('http://localhost:5000/api/read-rfid');
           const data = await response.json();
-          if (data.success && data.tag_id) {
-            sessionStorage.setItem('rfidData', data.tag_id);
+
+          if (data.success) {
             setStatus('RFID scanned successfully!');
+            sessionStorage.setItem('rfidData', data.tag_id);
             setIsScanning(false);
             setTimeout(() => {
               onNext({ rfid: data.tag_id });
             }, 1000);
-          } else if (!data.success && data.message !== 'No card found') {
+          } else if (data.message === 'No card detected') {
+            setStatus('Waiting for RFID scan...');
+          } else {
             setStatus(`Error: ${data.message}. Please try again.`);
             setIsScanning(false);
           }
         } catch (error) {
-          setStatus(`Error: ${error.message}. Please try again.`);
+          setStatus('Error: Failed to connect to server. Please try again.');
           setIsScanning(false);
         }
       }, 1000); // Poll every 1 second
     }
-    return () => clearInterval(interval);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [isScanning, onNext]);
 
   return (
