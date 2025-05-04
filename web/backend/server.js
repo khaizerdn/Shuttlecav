@@ -3,29 +3,30 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mysql from 'mysql2/promise';
 import { Gpio } from 'pigpio';
-import spi from 'spi-device';
-import MFRC522 from 'mfrc522-rfid';
 import fs from 'fs';
+import RPiMfrc522 from 'rpi-mfrc522';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// --- RFID Module Init ---
+// --- RFID Module Initialization ---
 let mfrc522;
+let lastUID = null;
 
 console.log('========== RFID INIT ==========');
 try {
+  console.log('Checking for SPI device...');
   if (!fs.existsSync('/dev/spidev0.0')) {
     console.error('SPI device not found: /dev/spidev0.0 does not exist!');
     process.exit(1);
   }
 
-  const spiDevice = spi.openSync(0, 0); // Bus 0, device 0
-  mfrc522 = new MFRC522(spiDevice);
-  console.log('MFRC522 initialized using mfrc522-rfid');
+  mfrc522 = new RPiMfrc522();
+  await mfrc522.init();
 
+  console.log('MFRC522 initialized successfully.');
 } catch (error) {
   console.error('===== RFID Initialization Error =====');
   console.error('Error name:', error.name);
@@ -34,7 +35,7 @@ try {
   process.exit(1);
 }
 
-// Database configuration
+// --- Database Configuration ---
 const dbConfig = {
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -42,41 +43,51 @@ const dbConfig = {
   database: process.env.DB_NAME,
 };
 
-// Middleware
+const pool = mysql.createPool(dbConfig);
+
+// --- Middleware ---
 app.use(cors());
 app.use(express.json());
 
-// Database connection pool
-const pool = mysql.createPool(dbConfig);
-
+// --- Routes ---
 app.get('/', (req, res) => {
   res.send('Backend is running...');
 });
 
-// RFID Scan Endpoint
+// --- RFID Reader Endpoint ---
 app.get('/api/read-rfid', async (req, res) => {
   try {
-    mfrc522.reset();
-
-    const card = mfrc522.findCard();
-    if (!card.status) {
+    const present = await mfrc522.cardPresent();
+    if (!present) {
       return res.json({ success: false, message: 'No card detected' });
     }
 
-    const uid = mfrc522.getUid();
-    if (!uid.status) {
+    const uid = await mfrc522.antiCollision();
+
+    if (!uid || !Array.isArray(uid)) {
       return res.json({ success: false, message: 'Unable to read UID' });
     }
 
-    const tagId = uid.data.map(byte => byte.toString(16).padStart(2, '0')).join(':');
-    res.json({ success: true, tag_id: tagId });
+    const uidString = uid.map(byte => byte.toString(16).padStart(2, '0')).join(':');
+
+    // Prevent duplicate scan within 1 second
+    if (uidString === lastUID) {
+      return res.json({ success: false, message: 'Duplicate scan' });
+    }
+
+    lastUID = uidString;
+    setTimeout(() => {
+      lastUID = null;
+    }, 1000);
+
+    res.json({ success: true, tag_id: uidString });
   } catch (error) {
     console.error('RFID read error:', error.message);
     res.status(500).json({ success: false, message: 'Failed to read RFID tag' });
   }
 });
 
-// Process Payment
+// --- Payment Processing Endpoint ---
 app.post('/api/process-payment', async (req, res) => {
   const { tag_id, amount } = req.body;
 
@@ -120,6 +131,7 @@ app.post('/api/process-payment', async (req, res) => {
   }
 });
 
+// --- Start Server ---
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
