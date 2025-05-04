@@ -1,4 +1,3 @@
-// src/pages/CustomAmount.jsx
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import { useState } from 'react';
 import '../index.css';
@@ -42,7 +41,7 @@ const CustomAmount = ({ onNext }) => {
         </div>
         <div className="description-container">
           <h1>ShuttleCav</h1>
-          <p>Select the amount to load</p>
+          {/* <p>Select the amount to load</p> */}
         </div>
       </div>
       <div className="right-container">
@@ -61,9 +60,11 @@ const CustomAmount = ({ onNext }) => {
             </button>
           ))}
         </div>
-        <button onClick={handleSubmit} className="enter-other-button">
-          Confirm
-        </button>
+        <div className="button-container">
+          <button onClick={handleSubmit} className="enter-other-button">
+            Confirm
+          </button>
+        </div>
       </div>
     </div>
   );

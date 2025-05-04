@@ -1,4 +1,3 @@
-// src/pages/IdlePage.jsx
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
@@ -18,30 +17,30 @@ const IdlePage = ({ onNext }) => {
         backgroundColor: '#fff',
         cursor: 'pointer',
         userSelect: 'none',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
       }}
     >
-      <img
-        src={shuttleCavLogo}
-        alt="ShuttleCav Logo"
-        style={{
-          width: '400px',
-          marginBottom: '20px',
-        }}
-      />
-      <p
-        style={{
-          fontSize: '2rem',
-          fontWeight: 'bold',
-          color: '#333',
-          textTransform: 'uppercase',
-        }}
-      >
-        Tap Anywhere to Start
-      </p>
+      <div className="left-container">
+        <div className="logo-container">
+          <img src={shuttleCavLogo} alt="ShuttleCav Logo" />
+        </div>
+        <div className="description-container">
+          <h1>ShuttleCav</h1>
+          {/* <p>Tap Anywhere to Start</p> */}
+        </div>
+      </div>
+      <div className="right-container">
+        <p
+          style={{
+            fontSize: '2rem',
+            fontWeight: 'bold',
+            color: '#333',
+            textTransform: 'uppercase',
+            textAlign: 'center',
+          }}
+        >
+          Tap Anywhere to Start
+        </p>
+      </div>
     </div>
   );
 };

@@ -2,38 +2,38 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mysql from 'mysql2/promise';
-import { Gpio } from 'pigpio';
+// import { Gpio } from 'pigpio';
 import fs from 'fs';
-import RPiMfrc522 from 'rpi-mfrc522';
+// import RPiMfrc522 from 'rpi-mfrc522';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// --- RFID Module Initialization ---
-let mfrc522;
-let lastUID = null;
+// // --- RFID Module Initialization ---
+// let mfrc522;
+// let lastUID = null;
 
-console.log('========== RFID INIT ==========');
-try {
-  console.log('Checking for SPI device...');
-  if (!fs.existsSync('/dev/spidev0.0')) {
-    console.error('SPI device not found: /dev/spidev0.0 does not exist!');
-    process.exit(1);
-  }
+// console.log('========== RFID INIT ==========');
+// try {
+//   console.log('Checking for SPI device...');
+//   if (!fs.existsSync('/dev/spidev0.0')) {
+//     console.error('SPI device not found: /dev/spidev0.0 does not exist!');
+//     process.exit(1);
+//   }
 
-  mfrc522 = new RPiMfrc522();
-  await mfrc522.init();
+//   mfrc522 = new RPiMfrc522();
+//   await mfrc522.init();
 
-  console.log('MFRC522 initialized successfully.');
-} catch (error) {
-  console.error('===== RFID Initialization Error =====');
-  console.error('Error name:', error.name);
-  console.error('Error message:', error.message);
-  console.error('Full error:', error);
-  process.exit(1);
-}
+//   console.log('MFRC522 initialized successfully.');
+// } catch (error) {
+//   console.error('===== RFID Initialization Error =====');
+//   console.error('Error name:', error.name);
+//   console.error('Error message:', error.message);
+//   console.error('Full error:', error);
+//   process.exit(1);
+// }
 
 // --- Database Configuration ---
 const dbConfig = {

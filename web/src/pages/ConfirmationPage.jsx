@@ -1,4 +1,3 @@
-// src/pages/ConfirmationPage.jsx
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
@@ -15,7 +14,7 @@ const ConfirmationPage = ({ amount, onNext, paymentStatus }) => {
         </div>
         <div className="description-container">
           <h1>ShuttleCav</h1>
-          <p>Confirm your amount</p>
+          {/* <p>Confirm your amount</p> */}
         </div>
       </div>
       <div className="right-container">
@@ -29,13 +28,15 @@ const ConfirmationPage = ({ amount, onNext, paymentStatus }) => {
               : paymentStatus}
           </div>
         ) : (
-          <button 
-            onClick={handleConfirm} 
-            className="enter-other-button"
-            disabled={paymentStatus !== null}
-          >
-            Confirm Payment
-          </button>
+          <div className="button-container">
+            <button 
+              onClick={handleConfirm} 
+              className="enter-other-button"
+              disabled={paymentStatus !== null}
+            >
+              Confirm Payment
+            </button>
+          </div>
         )}
       </div>
     </div>

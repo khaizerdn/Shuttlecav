@@ -1,33 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import shuttleCavLogo from '../assets/shuttlecav-logo.png';
+import '../index.css';
 
 const RFIDScanPage = ({ onNext }) => {
-  const [status, setStatus] = useState('Click "Start Scan" to begin');
-  const [isScanning, setIsScanning] = useState(false);
+  const [status, setStatus] = useState('PLEASE SCAN YOUR RFID');
+  const [isScanning, setIsScanning] = useState(true);
 
-  const styles = {
-    container: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100vh',
-      textAlign: 'center',
-      padding: '20px',
-    },
-    heading: {
-      marginBottom: '20px',
-    },
-    button: {
-      marginTop: '20px',
-      padding: '10px 20px',
-      fontSize: '16px',
-      cursor: 'pointer',
-    },
-  };
-
-  const startScanning = async () => {
-    setStatus('Waiting for RFID scan...');
-    setIsScanning(true);
+  const cancelScanning = () => {
+    setIsScanning(false);
+    onNext({ manualEntry: true });
   };
 
   useEffect(() => {
@@ -45,17 +26,13 @@ const RFIDScanPage = ({ onNext }) => {
             setTimeout(() => {
               onNext({ rfid: data.tag_id });
             }, 1000);
-          } else if (data.message === 'No card detected') {
-            setStatus('Waiting for RFID scan...');
           } else {
-            setStatus(`Error: ${data.message}. Please try again.`);
-            setIsScanning(false);
+            setStatus('PLEASE SCAN YOUR RFID');
           }
         } catch (error) {
-          setStatus('Error: Failed to connect to server. Please try again.');
-          setIsScanning(false);
+          setStatus('PLEASE SCAN YOUR RFID');
         }
-      }, 1000); // Poll every 1 second
+      }, 1000);
     }
 
     return () => {
@@ -64,29 +41,29 @@ const RFIDScanPage = ({ onNext }) => {
   }, [isScanning, onNext]);
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>Scan Your RFID Card</h2>
-      <p>{status}</p>
-      {!isScanning && !status.includes('successfully') && (
-        <button
-          style={styles.button}
-          onClick={startScanning}
-          disabled={status.includes('Error') && !status.includes('try again')}
-        >
-          Start Scan
-        </button>
-      )}
-      {status.includes('Error') && status.includes('try again') && (
-        <button style={styles.button} onClick={startScanning}>
-          Retry
-        </button>
-      )}
-      <button
-        style={styles.button}
-        onClick={() => onNext({ manualEntry: true })}
-      >
-        Enter Tag ID Manually
-      </button>
+    <div className="page-container">
+      <div className="left-container">
+        <div className="logo-container">
+          <img src={shuttleCavLogo} alt="ShuttleCav Logo" />
+        </div>
+        <div className="description-container">
+          <h1>ShuttleCav</h1>
+          {/* <p>Please scan your RFID card</p> */}
+        </div>
+      </div>
+      <div className="right-container">
+      <div className="tag-id-input">
+        {status}
+      </div>
+        <div className="button-container">
+          <button
+            onClick={cancelScanning}
+            className="enter-other-button"
+          >
+            Or Enter Tag ID
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

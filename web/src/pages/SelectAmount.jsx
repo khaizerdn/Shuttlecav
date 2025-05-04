@@ -1,4 +1,3 @@
-// src/pages/SelectAmount.jsx
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
@@ -26,7 +25,7 @@ const SelectAmount = ({ onNext }) => {
         </div>
         <div className="description-container">
           <h1>ShuttleCav</h1>
-          <p>Select the amount to load</p>
+          {/* <p>Select the amount to load</p> */}
         </div>
       </div>
       <div className="right-container">
@@ -48,9 +47,11 @@ const SelectAmount = ({ onNext }) => {
             </div>
           ))}
         </div>
-        <button onClick={handleEnterOtherAmount} className="enter-other-button">
-          Enter other amount
-        </button>
+        <div className="button-container">
+          <button onClick={handleEnterOtherAmount} className="enter-other-button">
+            Enter Amount
+          </button>
+        </div>
       </div>
     </div>
   );

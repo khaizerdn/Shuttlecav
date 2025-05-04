@@ -21,7 +21,7 @@ const ManualTagEntry = ({ onNext }) => {
         </div>
         <div className="description-container">
           <h1>ShuttleCav</h1>
-          <p>Enter your tag ID manually</p>
+          {/* <p>Enter your tag ID manually</p> */}
         </div>
       </div>
       <div className="right-container">
@@ -29,12 +29,14 @@ const ManualTagEntry = ({ onNext }) => {
           type="text"
           value={tagId}
           onChange={(e) => setTagId(e.target.value)}
-          placeholder="Enter Tag ID"
+          placeholder="ENTER TAG ID"
           className="tag-id-input"
         />
-        <button onClick={handleSubmit} className="submit-button">
-          Submit
-        </button>
+        <div className="button-container">
+          <button onClick={handleSubmit} className="enter-other-button">
+            Submit
+          </button>
+        </div>
       </div>
     </div>
   );
