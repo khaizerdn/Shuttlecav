@@ -38,6 +38,15 @@ app.get('/', (req, res) => {
   res.send('Backend is running...');
 });
 
+try {
+  console.log('Attempting to initialize MFRC522...');
+  mfrc522 = new MFRC522();
+  console.log('MFRC522 initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize MFRC522:', error.stack);
+  process.exit(1);
+}
+
 // Endpoint to read RFID tag
 app.get('/api/read-rfid', async (req, res) => {
   try {
