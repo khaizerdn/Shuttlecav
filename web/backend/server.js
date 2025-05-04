@@ -10,14 +10,32 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Initialize MFRC522
+// --- RFID Module Init ---
 let mfrc522;
+
+console.log('========== RFID INIT ==========');
 try {
-  console.log('Attempting to initialize MFRC522...');
+  console.log('Checking SPI device availability...');
+  const fs = await import('fs');
+  if (!fs.existsSync('/dev/spidev0.0')) {
+    console.error('SPI device not found: /dev/spidev0.0 does not exist!');
+    process.exit(1);
+  }
+
+  console.log('Creating MFRC522 instance...');
   mfrc522 = new MFRC522();
+
+  if (!mfrc522 || typeof mfrc522.reset !== 'function') {
+    console.error('MFRC522 instance seems invalid or improperly initialized.');
+    process.exit(1);
+  }
+
   console.log('MFRC522 initialized successfully');
 } catch (error) {
-  console.error('Failed to initialize MFRC522:', error.message);
+  console.error('===== RFID Initialization Error =====');
+  console.error('Error name:', error.name);
+  console.error('Error message:', error.message);
+  console.error('Full error:', error);
   process.exit(1);
 }
 
