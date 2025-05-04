@@ -3,7 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mysql from 'mysql2/promise';
 import { Gpio } from 'pigpio';
-import MFRC522 from 'mfrc522-rpi';
+import spi from 'spi-device';
+import MFRC522 from 'mfrc522-rfid';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -15,22 +17,15 @@ let mfrc522;
 
 console.log('========== RFID INIT ==========');
 try {
-  console.log('Checking SPI device availability...');
-  const fs = await import('fs');
   if (!fs.existsSync('/dev/spidev0.0')) {
     console.error('SPI device not found: /dev/spidev0.0 does not exist!');
     process.exit(1);
   }
 
-  console.log('Creating MFRC522 instance...');
-  mfrc522 = new MFRC522();
+  const spiDevice = spi.openSync(0, 0); // Bus 0, device 0
+  mfrc522 = new MFRC522(spiDevice);
+  console.log('MFRC522 initialized using mfrc522-rfid');
 
-  if (!mfrc522 || typeof mfrc522.reset !== 'function') {
-    console.error('MFRC522 instance seems invalid or improperly initialized.');
-    process.exit(1);
-  }
-
-  console.log('MFRC522 initialized successfully');
 } catch (error) {
   console.error('===== RFID Initialization Error =====');
   console.error('Error name:', error.name);
@@ -58,29 +53,30 @@ app.get('/', (req, res) => {
   res.send('Backend is running...');
 });
 
-// Endpoint to read RFID tag
+// RFID Scan Endpoint
 app.get('/api/read-rfid', async (req, res) => {
   try {
     mfrc522.reset();
-    const response = mfrc522.findCard();
-    if (!response.status) {
+
+    const card = mfrc522.findCard();
+    if (!card.status) {
       return res.json({ success: false, message: 'No card detected' });
     }
 
-    const uidResponse = mfrc522.getUid();
-    if (!uidResponse.status) {
+    const uid = mfrc522.getUid();
+    if (!uid.status) {
       return res.json({ success: false, message: 'Unable to read UID' });
     }
 
-    const uid = uidResponse.data.map(byte => byte.toString(16).padStart(2, '0')).join(':');
-    res.json({ success: true, tag_id: uid });
+    const tagId = uid.data.map(byte => byte.toString(16).padStart(2, '0')).join(':');
+    res.json({ success: true, tag_id: tagId });
   } catch (error) {
     console.error('RFID read error:', error.message);
     res.status(500).json({ success: false, message: 'Failed to read RFID tag' });
   }
 });
 
-// Endpoint to process payment
+// Process Payment
 app.post('/api/process-payment', async (req, res) => {
   const { tag_id, amount } = req.body;
 
