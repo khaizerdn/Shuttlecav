@@ -44,27 +44,29 @@ const CustomAmount = ({ onNext }) => {
           {/* <p>Select the amount to load</p> */}
         </div>
       </div>
-      <div className="right-container">
-        <div className="amount-display">
-          {customAmount || ''}
-        </div>
-        <div className="keypad-grid">
-          {keypadButtons.map((button, index) => (
-            <button
-              key={index}
-              onClick={() => handleKeypadClick(button)}
-              className="amount-button"
-              aria-label={button === '<' ? 'Backspace' : `Enter ${button}`}
-            >
-              {button}
-            </button>
-          ))}
+      <div className="right-containerbox">
+        <div className="right-container">
+          <div className="amount-display">
+            {customAmount || ''}
+          </div>
+          <div className="keypad-grid">
+            {keypadButtons.map((button, index) => (
+              <button
+                key={index}
+                onClick={() => handleKeypadClick(button)}
+                className="amount-button"
+                aria-label={button === '<' ? 'Backspace' : `Enter ${button}`}
+              >
+                {button}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="button-container">
-          <button onClick={handleSubmit} className="enter-other-button">
-            Confirm
-          </button>
-        </div>
+            <button onClick={handleSubmit} className="enter-other-button">
+              Confirm
+            </button>
+          </div>
       </div>
     </div>
   );

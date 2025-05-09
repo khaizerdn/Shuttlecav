@@ -14,20 +14,22 @@ const ConfirmationPage = ({ amount, onNext, paymentStatus }) => {
         </div>
         <div className="description-container">
           <h1>ShuttleCav</h1>
-          {/* <p>Confirm your amount</p> */}
         </div>
       </div>
-      <div className="right-container">
-        <div className="amount-display">
-          {amount.toFixed(2)}
-        </div>
-        {paymentStatus ? (
-          <div className="payment-status">
-            {paymentStatus === "success" 
-              ? "Payment Successful!" 
-              : paymentStatus}
+      <div className="right-containerbox">
+        <div className="right-container">
+          <div className="amount-display">
+            {amount.toFixed(2)}
           </div>
-        ) : (
+          {paymentStatus && (
+            <div className="payment-status">
+              {paymentStatus === "success" 
+                ? "Payment Successful!" 
+                : paymentStatus}
+            </div>
+          )}
+        </div>
+        {!paymentStatus && (
           <div className="button-container">
             <button 
               onClick={handleConfirm} 

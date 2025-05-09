@@ -25,21 +25,22 @@ const IdlePage = ({ onNext }) => {
         </div>
         <div className="description-container">
           <h1>ShuttleCav</h1>
-          {/* <p>Tap Anywhere to Start</p> */}
         </div>
       </div>
-      <div className="right-container">
-        <p
-          style={{
-            fontSize: '2rem',
-            fontWeight: 'bold',
-            color: '#333',
-            textTransform: 'uppercase',
-            textAlign: 'center',
-          }}
-        >
-          Tap Anywhere to Start
-        </p>
+      <div className="right-containerbox">
+        <div className="right-container">
+          <p
+            style={{
+              fontSize: '2rem',
+              fontWeight: 'bold',
+              color: '#333',
+              textTransform: 'uppercase',
+              textAlign: 'center',
+            }}
+          >
+            Tap Anywhere to Start
+          </p>
+        </div>
       </div>
     </div>
   );

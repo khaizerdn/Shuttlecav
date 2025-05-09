@@ -28,30 +28,33 @@ const SelectAmount = ({ onNext }) => {
           {/* <p>Select the amount to load</p> */}
         </div>
       </div>
-      <div className="right-container">
-        <div className="amount-grid">
-          {amounts.map((amountPair, index) => (
-            <div key={index} className="amount-row">
-              <button
-                onClick={() => handleAmountSelect(amountPair.left)}
-                className="amount-button"
-              >
-                {amountPair.left}
-              </button>
-              <button
-                onClick={() => handleAmountSelect(amountPair.right)}
-                className="amount-button"
-              >
-                {amountPair.right}
-              </button>
-            </div>
-          ))}
+      <div className='right-containerbox'>
+        <div className="right-container">
+          <div className="amount-grid">
+            {amounts.map((amountPair, index) => (
+              <div key={index} className="amount-row">
+                <button
+                  onClick={() => handleAmountSelect(amountPair.left)}
+                  className="amount-button"
+                >
+                  {amountPair.left}
+                </button>
+                <button
+                  onClick={() => handleAmountSelect(amountPair.right)}
+                  className="amount-button"
+                >
+                  {amountPair.right}
+                </button>
+              </div>
+            ))}
+          </div>
+          
         </div>
         <div className="button-container">
-          <button onClick={handleEnterOtherAmount} className="enter-other-button">
-            Enter Amount
-          </button>
-        </div>
+            <button onClick={handleEnterOtherAmount} className="enter-other-button">
+              Enter Amount
+            </button>
+          </div>
       </div>
     </div>
   );
