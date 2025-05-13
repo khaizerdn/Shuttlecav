@@ -5,6 +5,7 @@ import '../index.css';
 const RFIDScanPage = ({ onNext }) => {
   const [status, setStatus] = useState('PLEASE SCAN YOUR RFID');
   const inputRef = useRef(null);
+  const bufferRef = useRef(''); // Keep a temp buffer for input
 
   useEffect(() => {
     const input = inputRef.current;
@@ -22,12 +23,51 @@ const RFIDScanPage = ({ onNext }) => {
     };
   }, []);
 
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    if (/^[a-zA-Z0-9]{8}$/.test(value)) {
-      setStatus('RFID scanned successfully!');
+  const processInput = (raw) => {
+    const value = raw.trim();
+    console.log('Raw scanned input:', value);
+
+    let hexUID = '';
+
+    if (/^\d+$/.test(value)) {
+      const decimalUID = parseInt(value, 10);
+      console.log('Parsed decimal UID:', decimalUID);
+
+      if (!isNaN(decimalUID) && decimalUID >= 0 && decimalUID <= 0xFFFFFFFF) {
+        const buffer = new Uint8Array(4);
+        buffer[0] = (decimalUID >> 24) & 0xff;
+        buffer[1] = (decimalUID >> 16) & 0xff;
+        buffer[2] = (decimalUID >> 8) & 0xff;
+        buffer[3] = decimalUID & 0xff;
+
+        hexUID = Array.from(buffer.reverse())
+          .map((b) => b.toString(16).padStart(2, '0').toUpperCase())
+          .join('');
+
+        console.log('Reversed HEX UID:', hexUID);
+      }
+    } else if (/^[a-fA-F0-9]{8}$/.test(value)) {
+      hexUID = value.toUpperCase();
+    }
+
+    if (hexUID) {
+      console.log('✅ Scanned RFID UID (HEX):', hexUID);
+      setStatus(`RFID scanned successfully! Hex: ${hexUID}`);
+      onNext({ rfid: hexUID });
+    } else {
+      console.warn('⚠️ Invalid or incomplete input:', value);
+      setStatus('Invalid input. Please scan again.');
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      processInput(bufferRef.current);
+      bufferRef.current = '';
       inputRef.current.value = '';
-      onNext({ rfid: value });
+    } else {
+      bufferRef.current += e.key;
     }
   };
 
@@ -47,7 +87,7 @@ const RFIDScanPage = ({ onNext }) => {
             <p>{status}</p>
             <input
               type="text"
-              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
               ref={inputRef}
               style={{ position: 'absolute', left: '-9999px' }}
               aria-label="RFID Input"
