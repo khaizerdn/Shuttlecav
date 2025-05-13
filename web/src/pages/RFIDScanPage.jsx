@@ -25,13 +25,10 @@ const RFIDScanPage = ({ onNext, onCancel }) => {
 
   const processInput = (raw) => {
     const value = raw.trim();
-    console.log('Raw scanned input:', value);
-
     let hexUID = '';
 
     if (/^\d+$/.test(value)) {
       const decimalUID = parseInt(value, 10);
-      console.log('Parsed decimal UID:', decimalUID);
 
       if (!isNaN(decimalUID) && decimalUID >= 0 && decimalUID <= 0xFFFFFFFF) {
         const buffer = new Uint8Array(4);
@@ -43,15 +40,12 @@ const RFIDScanPage = ({ onNext, onCancel }) => {
         hexUID = Array.from(buffer.reverse())
           .map((b) => b.toString(16).padStart(2, '0').toUpperCase())
           .join('');
-
-        console.log('Reversed HEX UID:', hexUID);
       }
     } else if (/^[a-fA-F0-9]{8}$/.test(value)) {
       hexUID = value.toUpperCase();
     }
 
     if (hexUID) {
-      console.log('✅ Scanned RFID UID (HEX):', hexUID);
       setStatus(`RFID scanned successfully! Hex: ${hexUID}`);
       onNext({ rfid: hexUID });
     } else {
