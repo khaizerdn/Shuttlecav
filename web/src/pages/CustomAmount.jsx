@@ -2,7 +2,7 @@ import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import { useState } from 'react';
 import '../index.css';
 
-const CustomAmount = ({ onNext }) => {
+const CustomAmount = ({ onNext, onCancel }) => {
   const [customAmount, setCustomAmount] = useState('');
 
   const keypadButtons = [
@@ -63,6 +63,9 @@ const CustomAmount = ({ onNext }) => {
           </div>
         </div>
         <div className="button-container">
+            <button onClick={onCancel} className="cancel-button">
+              Cancel
+            </button>
             <button onClick={handleSubmit} className="enter-other-button">
               Confirm
             </button>

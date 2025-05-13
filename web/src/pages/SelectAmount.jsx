@@ -1,7 +1,7 @@
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
-const SelectAmount = ({ onNext }) => {
+const SelectAmount = ({ onNext, onCancel }) => {
   const amounts = [
     { left: 100, right: 500 },
     { left: 200, right: 1000 },
@@ -51,8 +51,11 @@ const SelectAmount = ({ onNext }) => {
           
         </div>
         <div className="button-container">
+            <button onClick={onCancel} className="cancel-button">
+              Cancel
+            </button>
             <button onClick={handleEnterOtherAmount} className="enter-other-button">
-              Enter Amount
+              Enter Other Amount
             </button>
           </div>
       </div>

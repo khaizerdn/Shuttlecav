@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
-const RFIDScanPage = ({ onNext }) => {
+const RFIDScanPage = ({ onNext, onCancel }) => {
   const [status, setStatus] = useState('PLEASE SCAN YOUR RFID');
   const inputRef = useRef(null);
-  const bufferRef = useRef(''); // Keep a temp buffer for input
+  const bufferRef = useRef('');
 
   useEffect(() => {
     const input = inputRef.current;
@@ -93,6 +93,11 @@ const RFIDScanPage = ({ onNext }) => {
               aria-label="RFID Input"
             />
           </div>
+        </div>
+        <div className="button-container">
+          <button onClick={onCancel} className="cancel-button">
+            Cancel
+          </button>
         </div>
       </div>
     </div>

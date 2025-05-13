@@ -1,7 +1,7 @@
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
-const ConfirmationPage = ({ amount, onNext, paymentStatus }) => {
+const ConfirmationPage = ({ amount, onNext, paymentStatus, onCancel }) => {
   const handleConfirm = () => {
     onNext({});
   };
@@ -31,6 +31,9 @@ const ConfirmationPage = ({ amount, onNext, paymentStatus }) => {
         </div>
         {!paymentStatus && (
           <div className="button-container">
+            <button onClick={onCancel} className="cancel-button">
+              Cancel
+            </button>
             <button 
               onClick={handleConfirm} 
               className="enter-other-button"

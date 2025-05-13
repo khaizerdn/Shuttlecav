@@ -80,14 +80,15 @@ const PaymentSteps = () => {
   return (
     <div className="step-container">
       <IdleTimeoutHandler />
-      {currentStep === 1 && <IdlePage onNext={handleNext} />}
-      {currentStep === 2 && <RFIDScanPage onNext={handleNext} />}
-      {currentStep === 3 && <SelectAmount onNext={handleNext} />}
-      {currentStep === 4 && <CustomAmount onNext={handleNext} />}
+      {currentStep === 1 && <IdlePage onNext={handleNext} onCancel={resetState} />}
+      {currentStep === 2 && <RFIDScanPage onNext={handleNext} onCancel={resetState} />}
+      {currentStep === 3 && <SelectAmount onNext={handleNext} onCancel={resetState} />}
+      {currentStep === 4 && <CustomAmount onNext={handleNext} onCancel={resetState} />}
       {currentStep === 5 && (
         <ConfirmationPage 
           amount={selectedAmount} 
           onNext={handleNext}
+          onCancel={resetState}
           paymentStatus={paymentStatus}
         />
       )}
