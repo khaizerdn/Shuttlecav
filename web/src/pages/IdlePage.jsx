@@ -19,25 +19,13 @@ const IdlePage = ({ onNext }) => {
         userSelect: 'none',
       }}
     >
-      <div className="left-container">
+      <div className="idle-container">
         <div className="logo-container">
           <img src={shuttleCavLogo} alt="ShuttleCav Logo" />
         </div>
         <div className="description-container">
           <h1>ShuttleCav</h1>
-        </div>
-      </div>
-      <div className="right-containerbox">
-        <div className="right-container">
-          <p
-            style={{
-              fontSize: '2rem',
-              fontWeight: 'bold',
-              color: '#333',
-              textTransform: 'uppercase',
-              textAlign: 'center',
-            }}
-          >
+          <p>
             Tap Anywhere to Start
           </p>
         </div>
