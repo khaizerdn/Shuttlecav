@@ -131,6 +131,19 @@ app.post('/api/process-payment', async (req, res) => {
   }
 });
 
+app.get('/api/get-user', async (req, res) => {
+  const { tag_id } = req.query;
+  try {
+    const [users] = await pool.query('SELECT firstname, middleinitial, surname FROM users WHERE tag_id = ?', [tag_id]);
+    if (users.length === 0) {
+      return res.json({ success: false, message: 'User not found' });
+    }
+    res.json({ success: true, user: users[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // --- Start Server ---
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);

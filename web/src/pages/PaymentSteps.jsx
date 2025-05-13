@@ -87,6 +87,7 @@ const PaymentSteps = () => {
       {currentStep === 5 && (
         <ConfirmationPage 
           amount={selectedAmount} 
+          rfid={rfidData}  // Added prop
           onNext={handleNext}
           onCancel={resetState}
           paymentStatus={paymentStatus}
