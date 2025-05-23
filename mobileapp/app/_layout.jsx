@@ -1,4 +1,3 @@
-// _layout.jsx
 import { Stack } from 'expo-router';
 import { ThemeProvider } from '@react-navigation/native';
 import { DarkTheme, DefaultTheme } from '@react-navigation/native';
@@ -29,6 +28,9 @@ export default function RootLayout() {
         <Stack.Screen name="inspection-logs" options={{ title: 'Inspection Logs', headerShown: true }} />
         <Stack.Screen name="start-inspection" options={{ title: 'Start Inspection', headerShown: true }} />
         <Stack.Screen name="admin-panel" options={{ title: 'Admin Panel', headerShown: true }} />
+        <Stack.Screen name="help-slideshow" options={{ title: 'Help', headerShown: true }} />
+        <Stack.Screen name="terms-and-conditions" options={{ title: 'Terms and Conditions', headerShown: true }} />
+        <Stack.Screen name="user-manual" options={{ title: 'User Manual', headerShown: true }} />
       </Stack>
     </ThemeProvider>
   );
