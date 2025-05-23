@@ -1,4 +1,3 @@
-// home.jsx
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, RefreshControl, Modal } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -11,6 +10,7 @@ const Home = () => {
   const [firstname, setFirstname] = useState('');
   const [surname, setSurname] = useState('');
   const [balance, setBalance] = useState(0);
+  const [role, setRole] = useState('');
   const [transactionHistory, setTransactionHistory] = useState([]);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -45,6 +45,7 @@ const Home = () => {
         setFirstname(data.firstname);
         setSurname(data.surname);
         setBalance(parseFloat(data.balance));
+        setRole(data.role || 'User');
       } else {
         console.error('Failed to fetch user info:', response.status);
         router.push('/');
@@ -140,8 +141,8 @@ const Home = () => {
 
   return (
     <ScrollView
-      style={{ flex: 1 }} // Only structural styles here
-      contentContainerStyle={globalStyles.container} // Layout styles moved here
+      style={{ flex: 1 }}
+      contentContainerStyle={globalStyles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
