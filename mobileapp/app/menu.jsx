@@ -94,6 +94,10 @@ const Menu = () => {
           </TouchableOpacity>
         </>
       )}
+      
+      <TouchableOpacity onPress={() => router.push({ pathname: '/user-manual', params: { role } })}>
+        <Text style={styles.menuItem}>User Manual</Text>
+      </TouchableOpacity>
 
       {/* Logout is always available */}
       <TouchableOpacity onPress={() => setIsLogoutModalVisible(true)}>
