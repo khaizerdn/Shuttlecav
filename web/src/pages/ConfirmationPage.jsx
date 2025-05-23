@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
-const ConfirmationPage = ({ amount, rfid, onNext, onCancel }) => {
+const ConfirmationPage = ({ amount, rfid, onNext, onCancel, paymentStatus }) => {
   const [userData, setUserData] = useState(null);
-  const [paymentStatus, setPaymentStatus] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -25,28 +24,8 @@ const ConfirmationPage = ({ amount, rfid, onNext, onCancel }) => {
     fetchUserData();
   }, [rfid]);
 
-  const handleConfirm = async () => {
-    try {
-      const response = await fetch("http://localhost:5000/api/process-payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ tag_id: rfid, amount }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setPaymentStatus("success");
-        setUserData(null); // Remove user info on success
-        setTimeout(() => onNext({ paymentStatus: "success" }), 2000);
-      } else {
-        throw new Error(data.message || 'Payment failed');
-      }
-    } catch (error) {
-      setPaymentStatus(`Error: ${error.message}`);
-      setTimeout(() => setPaymentStatus(null), 3000);
-    }
+  const handleConfirm = () => {
+    onNext({}); // Trigger next step (payment processing in PaymentSteps)
   };
 
   const currentDate = new Date().toLocaleDateString();
@@ -61,7 +40,6 @@ const ConfirmationPage = ({ amount, rfid, onNext, onCancel }) => {
           <h1>ShuttleCav</h1>
         </div>
       </div>
-
       <div className="right-containerbox">
         <div className="right-container">
           {paymentStatus === 'success' ? (
@@ -84,8 +62,6 @@ const ConfirmationPage = ({ amount, rfid, onNext, onCancel }) => {
             <div className="loading-message">Loading user data...</div>
           )}
         </div>
-
-        {/* Show buttons only when there's no successful payment */}
         {paymentStatus !== 'success' && (
           <div className="button-container">
             <button onClick={onCancel} className="cancel-button">
