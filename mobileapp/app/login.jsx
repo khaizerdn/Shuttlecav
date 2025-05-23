@@ -1,4 +1,3 @@
-// Login.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -132,19 +131,26 @@ const Login = () => {
           autoFocus={false}
         />
       </TouchableOpacity>
-
+  
       {errorMessage && (
         <Text style={globalStyles.inputErrorText}>{errorMessage}</Text>
       )}
-
+  
       <View style={globalStyles.separator}/>
-
+  
       <TouchableOpacity>
         <Text style={globalStyles.linkText}>Forgot MPIN?</Text>
       </TouchableOpacity>
       
       <TouchableOpacity onPress={() => router.push('/signup')}>
         <Text style={globalStyles.linkText}>Sign up</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={styles.termsLink}
+        onPress={() => router.push('/terms-and-conditions')}
+      >
+        <Text style={globalStyles.linkText}>Terms and Conditions</Text>
       </TouchableOpacity>
     </View>
   );
