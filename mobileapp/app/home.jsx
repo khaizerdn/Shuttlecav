@@ -150,7 +150,7 @@ const Home = () => {
       <View style={localStyles.profileSection}>
         <Image source={require('../assets/images/user-icon.png')} style={localStyles.profileImage} />
         <View>
-          <Text style={localStyles.subText}>Good day,</Text>
+          <Text style={localStyles.subText}>Good day, {role || 'passenger'}!</Text>
           <Text style={localStyles.welcomeText}>{firstname} {surname}!</Text>
         </View>
       </View>
