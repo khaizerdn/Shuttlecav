@@ -45,7 +45,7 @@ const Home = () => {
         setFirstname(data.firstname);
         setSurname(data.surname);
         setBalance(parseFloat(data.balance));
-        setRole(data.role || 'passenger');
+        setRole(data.role || 'Passenger');
       } else {
         console.error('Failed to fetch user info:', response.status);
         router.push('/');
@@ -150,7 +150,7 @@ const Home = () => {
       <View style={localStyles.profileSection}>
         <Image source={require('../assets/images/user-icon.png')} style={localStyles.profileImage} />
         <View>
-          <Text style={localStyles.subText}>Good day, {role || 'passenger'}!</Text>
+        <Text style={localStyles.subText}>Good day, {role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Passenger'}!</Text>
           <Text style={localStyles.welcomeText}>{firstname} {surname}!</Text>
         </View>
       </View>
