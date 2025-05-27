@@ -45,7 +45,7 @@ const Home = () => {
         setFirstname(data.firstname);
         setSurname(data.surname);
         setBalance(parseFloat(data.balance));
-        setRole(data.role || 'User');
+        setRole(data.role || 'passenger');
       } else {
         console.error('Failed to fetch user info:', response.status);
         router.push('/');
