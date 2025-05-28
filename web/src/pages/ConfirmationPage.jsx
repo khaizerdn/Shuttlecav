@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
 const ConfirmationPage = ({ amount, rfid, onNext, onCancel, paymentStatus }) => {
+  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [error, setError] = useState(null);
 
@@ -25,13 +27,20 @@ const ConfirmationPage = ({ amount, rfid, onNext, onCancel, paymentStatus }) => 
   }, [rfid]);
 
   const handleConfirm = () => {
-    onNext({}); // Trigger next step (payment processing in PaymentSteps)
+    onNext({});
   };
 
   const currentDate = new Date().toLocaleDateString();
 
   return (
     <div className="page-container">
+      <button
+        onClick={() => navigate('/users-manual')}
+        className="help-button"
+        aria-label="Help"
+      >
+        ?
+      </button>
       <div className="left-container">
         <div className="logo-container">
           <img src={shuttleCavLogo} alt="ShuttleCav Logo" />

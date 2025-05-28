@@ -1,8 +1,10 @@
-import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
 const CustomAmount = ({ onNext, onCancel }) => {
+  const navigate = useNavigate();
   const [customAmount, setCustomAmount] = useState('');
 
   const keypadButtons = [
@@ -35,13 +37,19 @@ const CustomAmount = ({ onNext, onCancel }) => {
 
   return (
     <div className="page-container">
+      <button
+        onClick={() => navigate('/users-manual')}
+        className="help-button"
+        aria-label="Help"
+      >
+        ?
+      </button>
       <div className="left-container">
         <div className="logo-container">
           <img src={shuttleCavLogo} alt="ShuttleCav Logo" />
         </div>
         <div className="description-container">
           <h1>ShuttleCav</h1>
-          {/* <p>Select the amount to load</p> */}
         </div>
       </div>
       <div className="right-containerbox">

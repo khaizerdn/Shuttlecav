@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
 const IdlePage = ({ onNext }) => {
+  const navigate = useNavigate();
   const handleClick = () => {
     onNext({});
   };
@@ -19,6 +21,13 @@ const IdlePage = ({ onNext }) => {
         userSelect: 'none',
       }}
     >
+      <button
+        onClick={() => navigate('/users-manual')}
+        className="help-button"
+        aria-label="Help"
+      >
+        ?
+      </button>
       <div className="idle-container">
         <div className="logo-container">
           <img src={shuttleCavLogo} alt="ShuttleCav Logo" />

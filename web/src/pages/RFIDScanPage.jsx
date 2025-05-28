@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
 const RFIDScanPage = ({ onNext, onCancel }) => {
+  const navigate = useNavigate();
   const [status, setStatus] = useState('PLEASE SCAN YOUR RFID');
   const inputRef = useRef(null);
   const bufferRef = useRef('');
@@ -67,6 +69,13 @@ const RFIDScanPage = ({ onNext, onCancel }) => {
 
   return (
     <div className="page-container">
+      <button
+        onClick={() => navigate('/users-manual')}
+        className="help-button"
+        aria-label="Help"
+      >
+        ?
+      </button>
       <div className="left-container">
         <div className="logo-container">
           <img src={shuttleCavLogo} alt="ShuttleCav Logo" />

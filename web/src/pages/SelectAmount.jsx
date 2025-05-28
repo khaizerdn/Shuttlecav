@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import shuttleCavLogo from '../assets/shuttlecav-logo.png';
 import '../index.css';
 
 const SelectAmount = ({ onNext, onCancel }) => {
+  const navigate = useNavigate();
   const amounts = [
     { left: 100, right: 500 },
     { left: 200, right: 1000 },
@@ -19,13 +21,19 @@ const SelectAmount = ({ onNext, onCancel }) => {
 
   return (
     <div className="page-container">
+      <button
+        onClick={() => navigate('/users-manual')}
+        className="help-button"
+        aria-label="Help"
+      >
+        ?
+      </button>
       <div className="left-container">
         <div className="logo-container">
           <img src={shuttleCavLogo} alt="ShuttleCav Logo" />
         </div>
         <div className="description-container">
           <h1>ShuttleCav</h1>
-          {/* <p>Select the amount to load</p> */}
         </div>
       </div>
       <div className='right-containerbox'>
@@ -48,7 +56,6 @@ const SelectAmount = ({ onNext, onCancel }) => {
               </div>
             ))}
           </div>
-          
         </div>
         <div className="button-container">
             <button onClick={onCancel} className="cancel-button">

@@ -1,6 +1,6 @@
-// src/App.jsx Update
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import PaymentSteps from './pages/PaymentSteps';
+import UsersManual from './pages/users-manual';
 import './App.css';
 
 function App() {
@@ -8,6 +8,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<PaymentSteps />} />
+        <Route path="/users-manual" element={<UsersManual />} />
       </Routes>
     </Router>
   );

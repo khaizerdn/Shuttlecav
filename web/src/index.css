@@ -35,6 +35,105 @@ html, body {
   margin: 0 auto;
   overflow: hidden;
   background: linear-gradient(135deg, #ffffff, #e8ecef);
+  position: relative;
+}
+
+/* Help button */
+.help-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  background: #1e3a8a;
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.help-button:hover {
+  background: #2a4d9b;
+}
+
+/* Slideshow styles */
+.manual-container {
+  height: 100vh;
+  width: 100%;
+  overflow-y: hidden;
+  overflow-x: hidden;
+  background: #000;
+  position: relative;
+  overflow: flex;
+}
+
+.slideshow-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+}
+
+.image-container {
+  flex: 0 0 100%;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  scroll-snap-align: center;
+  background: #ffffff;
+}
+
+.slide-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.page-indicator {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 100%;
+}
+
+.page-text {
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 5px 10px;
+  border-radius: 10px;
+}
+
+.back-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 10px;
+  font-size: 1rem;
+  font-weight: bold;
+  background: #1e3a8a;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.back-button:hover {
+  background: #2a4d9b;
 }
 
 /* Left container (branding panel) */
@@ -188,9 +287,9 @@ html, body {
 .tag-id-input {
   display: flex;
   text-align: center;
-  justify-content: center;       /* Center horizontally */
-  align-items: center;           /* Center vertically */
-  height: 100px;                 /* Add a fixed or relative height */
+  justify-content: center;
+  align-items: center;
+  height: 100px;
   width: 300px;
   padding: 1.2rem;
   font-size: 1.8rem;
@@ -324,6 +423,14 @@ html, body {
     padding: 0.8rem;
     font-size: 1rem;
   }
+
+  .help-button {
+    top: 5px;
+    left: 5px;
+    width: 35px;
+    height: 35px;
+    font-size: 1.2rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -347,5 +454,13 @@ html, body {
 
   .button-container {
     width: 100%;
+  }
+
+  .help-button {
+    top: 5px;
+    left: 5px;
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
   }
 }
